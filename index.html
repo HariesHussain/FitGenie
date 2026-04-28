@@ -2,61 +2,126 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FitGenie - AI Fitness Coach</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              background: '#020617', // slate-950
-              surface: '#0f172a',    // slate-900
-              surfaceHighlight: '#1e293b', // slate-800
-              primary: '#7c3aed',    // violet-600
-              secondary: '#22d3ee',  // cyan-400
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            }
-          }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    
+    <!-- Core SEO Meta Tags -->
+    <meta name="description" content="FitGenie is your intelligent AI fitness coach. Generate personalized workouts, track nutrition, monitor progress, and get real-time coaching. Fast, secure, and built for all fitness levels." />
+    <meta name="keywords" content="AI fitness coach, personalized workouts, fitness tracker, nutrition planning, workout planner, fitness app" />
+    <meta name="author" content="FitGenie Team" />
+    <meta name="creator" content="FitGenie" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://fitgenie-x.vercel.app/" />
+    <link rel="sitemap" href="/sitemap.xml" />
+    
+    <!-- Theme Configuration -->
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="color-scheme" content="light" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fitgenie-x.vercel.app/" />
+    <meta property="og:title" content="FitGenie - Your Personal AI Fitness Coach" />
+    <meta property="og:description" content="Intelligent fitness coaching with AI-powered workouts, nutrition planning, and real-time progress tracking." />
+    <meta property="og:image" content="https://fitgenie-x.vercel.app/logo.png" />
+    <meta property="og:site_name" content="FitGenie" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://fitgenie-x.vercel.app/" />
+    <meta name="twitter:title" content="FitGenie - Your Personal AI Fitness Coach" />
+    <meta name="twitter:description" content="Intelligent fitness coaching with AI-powered workouts, nutrition planning, and real-time progress tracking." />
+    <meta name="twitter:image" content="https://fitgenie-x.vercel.app/logo.png" />
+    <meta name="twitter:site" content="@fitgenie" />
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "FitGenie",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web",
+        "description": "An intelligent AI fitness coach providing personalized workouts, nutrition planning, and real-time coaching.",
+        "url": "https://fitgenie-x.vercel.app/",
+        "image": "https://fitgenie-x.vercel.app/logo.png",
+        "author": {
+          "@type": "Organization",
+          "name": "FitGenie Team"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
         }
       }
     </script>
+    
+    <!-- Performance & Preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    <link rel="prefetch" href="/sitemap.xml" />
+    
+    <!-- Alternate Links for Localization -->
+    <link rel="alternate" href="https://fitgenie-x.vercel.app/" hreflang="en" />
+    
+    <title>FitGenie - Personal AI Fitness Coach | Workouts & Nutrition</title>
+    
     <style>
-      body {
-        background-color: #020617;
-        color: #f8fafc;
+      html {
+        scroll-behavior: smooth;
       }
-      /* Custom Scrollbar for dark theme */
+      
+      body {
+        background-color: #f8fafc;
+        color: #1e293b;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      html.dark body {
+        background-color: #0f172a;
+        color: #f1f5f9;
+      }
+      
+      /* Custom Scrollbar Light Mode */
       ::-webkit-scrollbar {
         width: 8px;
+        height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #0f172a; 
+        background: #f1f5f9; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #334155; 
+        background: #cbd5e1; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #475569; 
+        background: #94a3b8; 
+      }
+      
+      /* Custom Scrollbar Dark Mode */
+      html.dark ::-webkit-scrollbar-track {
+        background: #334155;
+      }
+      html.dark ::-webkit-scrollbar-thumb {
+        background: #64748b;
+        border-radius: 4px;
+      }
+      html.dark ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
       }
     </style>
   <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-<link rel="icon" href="/logo.png" type="image/png" />
+    {}
+  </script>
+  <link rel="icon" href="/logo.png" type="image/png" />
 
 </head>
   <body>

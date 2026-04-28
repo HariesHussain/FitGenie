@@ -20,8 +20,8 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = ({ oobCode, onDone 
         e.preventDefault();
         setError('');
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters.');
             return;
         }
 
@@ -38,7 +38,7 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = ({ oobCode, onDone 
             if (err?.code === 'auth/invalid-action-code') {
                 setError('This reset link has expired or already been used. Please request a new one.');
             } else if (err?.code === 'auth/weak-password') {
-                setError('Password is too weak. Please use at least 6 characters.');
+                setError('Password is too weak. Please use at least 8 characters.');
             } else {
                 setError(err?.message || 'Failed to update password.');
             }
@@ -56,12 +56,7 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = ({ oobCode, onDone 
     }, [success, onDone]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-                <div className="absolute top-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-[100px]"></div>
-                <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-secondary/10 rounded-full blur-[100px]"></div>
-            </div>
-
+        <div className="min-h-screen flex items-center justify-center p-4">
             <Card className="max-w-md w-full relative z-10 animate-fade-in">
                 {success ? (
                     <div className="text-center py-8 space-y-4">
@@ -93,7 +88,7 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = ({ oobCode, onDone 
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
+                                        placeholder="Minimum 8 characters"
                                         className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-600"
                                     />
                                 </div>
@@ -107,7 +102,7 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = ({ oobCode, onDone 
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="••••••••"
+                                        placeholder="Repeat password"
                                         className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-600"
                                     />
                                 </div>

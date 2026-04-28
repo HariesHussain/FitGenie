@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Layout } from './components/Layout';
 import { Landing } from './views/Landing';
-import { Onboarding } from './views/Onboarding';
-import { Dashboard } from './views/Dashboard';
-import { WorkoutView } from './views/WorkoutView';
-import { DietView } from './views/DietView';
-import { ChatView } from './views/ChatView';
-import { Auth } from './views/Auth';
-import { UpdatePassword } from './views/UpdatePassword';
-import { TrackerView } from './views/TrackerView';
-import { ProfileView } from './views/ProfileView';
 
 import { UserProfile, WorkoutDay, MealPlan, ChatMessage, FitnessLevel, BodyPart } from './types';
 
@@ -20,6 +11,16 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { loginWithEmail, loadUserProfile, saveUserProfile, saveWorkoutData, loadWorkoutData, saveExerciseLog, deleteExerciseLog, loadExerciseLogs } from "./services/api";
 
 import { generateDailyMealPlan, generateTargetedWorkout } from './services/aiService';
+
+const Onboarding = React.lazy(() => import('./views/Onboarding').then(module => ({ default: module.Onboarding })));
+const Dashboard = React.lazy(() => import('./views/Dashboard').then(module => ({ default: module.Dashboard })));
+const WorkoutView = React.lazy(() => import('./views/WorkoutView').then(module => ({ default: module.WorkoutView })));
+const DietView = React.lazy(() => import('./views/DietView').then(module => ({ default: module.DietView })));
+const ChatView = React.lazy(() => import('./views/ChatView').then(module => ({ default: module.ChatView })));
+const Auth = React.lazy(() => import('./views/Auth').then(module => ({ default: module.Auth })));
+const UpdatePassword = React.lazy(() => import('./views/UpdatePassword').then(module => ({ default: module.UpdatePassword })));
+const TrackerView = React.lazy(() => import('./views/TrackerView').then(module => ({ default: module.TrackerView })));
+const ProfileView = React.lazy(() => import('./views/ProfileView').then(module => ({ default: module.ProfileView })));
 
 
 const App = () => {
@@ -73,9 +74,29 @@ const App = () => {
 
   // Auto-login via Firebase Auth
   useEffect(() => {
+    let isMounted = true;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!isMounted) return;
       try {
         if (firebaseUser) {
+          const cachedProfile = loadState<UserProfile | null>(STORAGE_KEYS.USER, null);
+          if (cachedProfile) {
+            setUser(cachedProfile);
+            setWorkoutPlan(loadState<WorkoutDay[]>(STORAGE_KEYS.WORKOUT, []));
+            const cachedMeals = loadState<Record<string, MealPlan> | MealPlan | null>(STORAGE_KEYS.MEAL, {});
+            if (cachedMeals && 'breakfast' in (cachedMeals as any)) {
+              setMealHistory({ [getDateKey(0)]: cachedMeals as MealPlan });
+            } else {
+              setMealHistory((cachedMeals as Record<string, MealPlan>) || {});
+            }
+            setMessages(loadState<ChatMessage[]>(STORAGE_KEYS.MESSAGES, []));
+            setView(prev => (prev === 'update-password' ? prev : 'dashboard'));
+          }
+
+          // Resolve auth gate immediately, then hydrate from network.
+          setIsAuthLoading(false);
+
           let profile = null;
           try {
             profile = await loadUserProfile(firebaseUser.uid);
@@ -85,6 +106,7 @@ const App = () => {
 
           if (profile) {
             setUser(profile);
+            saveState(STORAGE_KEYS.USER, profile);
 
             // Load workout data from Firestore
             let wPlan = null;
@@ -130,6 +152,27 @@ const App = () => {
             });
           }
         } else {
+          // No Firebase user - Check for guest session
+          const guestStr = localStorage.getItem("fitgenie_user");
+          if (guestStr) {
+            try {
+              const guestProfile = JSON.parse(guestStr);
+              if (guestProfile.isGuest) {
+                setUser(guestProfile);
+                setWorkoutPlan(loadState<WorkoutDay[]>(STORAGE_KEYS.WORKOUT, []));
+                setMealHistory(loadState<Record<string, MealPlan>>(STORAGE_KEYS.MEAL, {}));
+                setMessages(loadState<ChatMessage[]>(STORAGE_KEYS.MESSAGES, []));
+                setView(prev => {
+                  if (prev === 'update-password') return prev;
+                  return 'dashboard';
+                });
+                return;
+              }
+            } catch (e) {
+              console.error("Guest parse error", e);
+            }
+          }
+          
           setUser(null);
           setWorkoutPlan([]);
           setMealHistory({});
@@ -138,28 +181,74 @@ const App = () => {
             if (prev === 'update-password') return prev;
             return 'landing';
           });
+          setIsAuthLoading(false);
         }
       } catch (err) {
         console.error('Auth state handler error:', err);
         setView('landing');
-      } finally {
         setIsAuthLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const handleStartGuest = () => {
-    const guestUser = {
-      uid: "guest_" + Date.now(),
-      email: "guest@example.com",
-      displayName: "Guest User",
-      isGuest: true,
-    };
+    // Check if a guest profile already exists
+    const existingGuestStr = localStorage.getItem("fitgenie_user");
+    let guestUser;
+
+    if (existingGuestStr) {
+      try {
+        const existing = JSON.parse(existingGuestStr);
+        if (existing.isGuest) {
+          // Reuse existing guest profile
+          guestUser = existing;
+        } else {
+          // Not a guest, create new
+          guestUser = {
+            uid: "guest_" + Date.now(),
+            email: "guest@example.com",
+            displayName: "Guest User",
+            isGuest: true,
+          };
+        }
+      } catch (e) {
+        // Parse error, create new guest
+        guestUser = {
+          uid: "guest_" + Date.now(),
+          email: "guest@example.com",
+          displayName: "Guest User",
+          isGuest: true,
+        };
+      }
+    } else {
+      // No existing guest, create new
+      guestUser = {
+        uid: "guest_" + Date.now(),
+        email: "guest@example.com",
+        displayName: "Guest User",
+        isGuest: true,
+      };
+    }
+
     setUser(guestUser as any);
     localStorage.setItem("fitgenie_user", JSON.stringify(guestUser));
-    setView("onboarding");
+
+    // If guest already has onboarding data (has fitness level set), go to dashboard
+    if (guestUser.fitnessLevel) {
+      // Load existing guest data
+      setWorkoutPlan(loadState<WorkoutDay[]>(STORAGE_KEYS.WORKOUT, []));
+      setMealHistory(loadState<Record<string, MealPlan>>(STORAGE_KEYS.MEAL, {}));
+      setMessages(loadState<ChatMessage[]>(STORAGE_KEYS.MESSAGES, []));
+      setView("dashboard");
+    } else {
+      // New guest or incomplete onboarding, go to onboarding
+      setView("onboarding");
+    }
   };
 
   const handleAuthNavigation = (target: "login" | "signup") => {
@@ -231,6 +320,9 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
+      // Preserve guest session if user is a guest
+      const isGuest = (user as any)?.isGuest === true;
+
       if (auth.currentUser) {
         await signOut(auth);
       }
@@ -241,11 +333,21 @@ const App = () => {
       setMessages([]);
       setTempAuthData({});
 
-      localStorage.removeItem('fitgenie_user');
-      localStorage.removeItem('fitgenie_workout');
-      localStorage.removeItem('fitgenie_meal');
-      localStorage.removeItem('fitgenie_messages');
-      localStorage.removeItem('fitgenie_history');
+      // Only clear guest data if they had a Firebase account (not a guest)
+      if (!isGuest) {
+        localStorage.removeItem('fitgenie_user');
+        localStorage.removeItem('fitgenie_workout');
+        localStorage.removeItem('fitgenie_meal');
+        localStorage.removeItem('fitgenie_messages');
+        localStorage.removeItem('fitgenie_history');
+      } else {
+        // For guests, preserve their session data by not clearing fitgenie_user
+        // Clear only transient data
+        localStorage.removeItem('fitgenie_workout');
+        localStorage.removeItem('fitgenie_meal');
+        localStorage.removeItem('fitgenie_messages');
+        localStorage.removeItem('fitgenie_history');
+      }
 
       setView('landing');
     } catch (err: any) {
@@ -254,7 +356,10 @@ const App = () => {
       setWorkoutPlan([]);
       setMealHistory({});
       setMessages([]);
-      localStorage.removeItem('fitgenie_user');
+      // Preserve guest user even on error
+      if ((user as any)?.isGuest !== true) {
+        localStorage.removeItem('fitgenie_user');
+      }
       setView('landing');
     }
   };
@@ -332,24 +437,24 @@ const App = () => {
             const uniqueDates = new Set(allLogs.map(l => l.date));
             const totalWorkoutDays = uniqueDates.size;
 
-            let newLevel = user.level;
+            let newLevel = user.fitnessLevel;
             let didUpgrade = false;
 
-            if (user.level === 'Beginner' && totalWorkoutDays >= 10) {
+            if (user.fitnessLevel === 'Beginner' && totalWorkoutDays >= 10) {
               newLevel = 'Intermediate' as FitnessLevel;
               didUpgrade = true;
-            } else if (user.level === 'Intermediate' && totalWorkoutDays >= 30) {
+            } else if (user.fitnessLevel === 'Intermediate' && totalWorkoutDays >= 30) {
               newLevel = 'Advanced' as FitnessLevel;
               didUpgrade = true;
             }
 
             if (didUpgrade) {
-              const updatedProfile = { ...user, level: newLevel };
+              const updatedProfile = { ...user, fitnessLevel: newLevel };
               await handleUpdateProfile(updatedProfile);
               // Simple browser alert for the achievement (can be replaced with custom toast later)
               // Use setTimeout to allow the UI to finish rendering the exercise toggle first
               setTimeout(() => {
-                alert(`🎉 CONGRATULATIONS! 🎉\n\nYou've completed ${totalWorkoutDays} workout days! Your Fitness Level has automatically upgraded to: ${newLevel.toUpperCase()}!\n\nYour future AI workouts will now be harder.`);
+                alert(`Congratulations!\n\nYou've completed ${totalWorkoutDays} workout days. Your fitness level has been upgraded to ${newLevel}.\n\nFuture workouts will now be more challenging.`);
               }, 500);
             }
           } catch (err) {
@@ -400,6 +505,12 @@ const App = () => {
   };
 
   const currentMealPlan = mealHistory[getDateKey(dateOffset)];
+
+  const viewFallback = (
+    <div className="flex min-h-[280px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
+    </div>
+  );
 
   // View Router
   const renderView = () => {
@@ -503,21 +614,24 @@ const App = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
-        <div className="w-12 h-12 border-4 border-slate-800 border-t-primary rounded-full animate-spin"></div>
-        <p className="text-slate-400 text-sm animate-pulse tracking-wide uppercase font-bold">Verifying Session...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="inline-flex h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
       </div>
     );
   }
 
   if (['landing', 'login', 'signup', 'onboarding', 'update-password'].includes(view)) {
-    return <div className="min-h-screen bg-background text-slate-100 font-sans">{renderView()}</div>;
+    return (
+      <div className="min-h-screen bg-background text-slate-100 font-sans">
+        <React.Suspense fallback={viewFallback}>{renderView()}</React.Suspense>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-background text-slate-100 font-sans">
       <Layout currentView={view} onNavigate={setView} onLogout={handleLogout} user={user}>
-        {renderView()}
+        <React.Suspense fallback={viewFallback}>{renderView()}</React.Suspense>
       </Layout>
     </div>
   );

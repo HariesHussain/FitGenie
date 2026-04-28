@@ -14,13 +14,13 @@ interface TrackerViewProps {
 }
 
 const BODY_PART_COLORS: Record<string, string> = {
-    'Full Body': 'from-violet-500 to-purple-600',
+    'Full Body': 'from-teal-500 to-cyan-600',
     'Chest': 'from-red-500 to-rose-600',
     'Back': 'from-blue-500 to-indigo-600',
     'Legs': 'from-green-500 to-emerald-600',
     'Shoulders': 'from-amber-500 to-orange-600',
     'Arms': 'from-cyan-500 to-teal-600',
-    'Core': 'from-pink-500 to-fuchsia-600',
+    'Core': 'from-rose-500 to-red-600',
 };
 
 const BODY_PART_BG: Record<string, string> = {
@@ -194,19 +194,16 @@ export const TrackerView: React.FC<TrackerViewProps> = ({ user }) => {
             {/* Streak + Today's Stats Row */}
             <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gradient-to-br from-amber-900/50 to-slate-900 border border-amber-700/30 rounded-xl p-4 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/10 rounded-full -mr-6 -mt-6 blur-lg" />
                     <Award className="w-6 h-6 text-amber-400 mx-auto mb-1" />
                     <p className="text-3xl font-black text-white">{streak}</p>
                     <p className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">Day Streak</p>
                 </div>
-                <div className="bg-gradient-to-br from-violet-900/50 to-slate-900 border border-violet-700/30 rounded-xl p-4 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-violet-500/10 rounded-full -mr-6 -mt-6 blur-lg" />
-                    <Dumbbell className="w-6 h-6 text-violet-400 mx-auto mb-1" />
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center relative overflow-hidden">
+                    <Dumbbell className="w-6 h-6 text-teal-400 mx-auto mb-1" />
                     <p className="text-3xl font-black text-white">{todayLogs.length}</p>
-                    <p className="text-[10px] text-violet-400/80 uppercase font-bold tracking-wider">Today</p>
+                    <p className="text-[10px] text-teal-400/80 uppercase font-bold tracking-wider">Today</p>
                 </div>
                 <div className="bg-gradient-to-br from-cyan-900/50 to-slate-900 border border-cyan-700/30 rounded-xl p-4 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/10 rounded-full -mr-6 -mt-6 blur-lg" />
                     <TrendingUp className="w-6 h-6 text-cyan-400 mx-auto mb-1" />
                     <p className="text-3xl font-black text-white">{totalSets}</p>
                     <p className="text-[10px] text-cyan-400/80 uppercase font-bold tracking-wider">Sets</p>
@@ -215,7 +212,6 @@ export const TrackerView: React.FC<TrackerViewProps> = ({ user }) => {
 
             {/* Weekly Activity Chart */}
             <Card className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                 <div className="relative">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">

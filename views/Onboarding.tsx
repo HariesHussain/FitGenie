@@ -33,33 +33,34 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, initialData 
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 flex items-center justify-center">
-      <Card className="max-w-lg w-full">
+    <div className="app-surface min-h-screen py-10 px-4 flex items-center justify-center">
+      <Card className="max-w-2xl w-full">
         <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-white">Tell us about yourself</h2>
-          <p className="text-slate-400 text-sm">We need this to generate your AI plan.</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-teal-700">Personalization</p>
+          <h2 className="mt-1 text-3xl font-black text-slate-950">Build your fitness profile</h2>
+          <p className="mt-2 text-sm text-slate-600">These details generate safer workout intensity and nutrition targets.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Age</label>
+              <label className="text-xs font-black uppercase tracking-wide text-slate-500">Age</label>
               <div className="relative">
                 <User className="absolute left-3 top-3 text-slate-500 w-4 h-4" />
                 <input
                   type="number"
                   value={formData.age}
                   onChange={(e) => handleChange('age', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-primary focus:outline-none"
+                  className="input-shell w-full rounded-xl py-2.5 pl-10 pr-4"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Gender</label>
+              <label className="text-xs font-black uppercase tracking-wide text-slate-500">Gender</label>
               <select
                 value={formData.gender}
                 onChange={(e) => handleChange('gender', e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-white focus:ring-2 focus:ring-primary focus:outline-none appearance-none"
+                className="input-shell w-full rounded-xl py-2.5 px-4 appearance-none"
               >
                 {Object.values(Gender).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
@@ -68,33 +69,33 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, initialData 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Height (cm)</label>
+              <label className="text-xs font-black uppercase tracking-wide text-slate-500">Height (cm)</label>
               <div className="relative">
                 <Ruler className="absolute left-3 top-3 text-slate-500 w-4 h-4" />
                 <input
                   type="number"
                   value={formData.height}
                   onChange={(e) => handleChange('height', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-primary focus:outline-none"
+                  className="input-shell w-full rounded-xl py-2.5 pl-10 pr-4"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Weight (kg)</label>
+              <label className="text-xs font-black uppercase tracking-wide text-slate-500">Weight (kg)</label>
               <div className="relative">
                 <Weight className="absolute left-3 top-3 text-slate-500 w-4 h-4" />
                 <input
                   type="number"
                   value={formData.weight}
                   onChange={(e) => handleChange('weight', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-primary focus:outline-none"
+                  className="input-shell w-full rounded-xl py-2.5 pl-10 pr-4"
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-400">Experience Level</label>
+            <label className="text-xs font-black uppercase tracking-wide text-slate-500">Experience Level</label>
             <div className="grid grid-cols-3 gap-2">
               {Object.values(FitnessLevel).map(l => (
                 <button
@@ -102,8 +103,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, initialData 
                   type="button"
                   onClick={() => handleChange('fitnessLevel', l)}
                   className={`p-2 rounded-xl border text-xs font-medium transition-all ${formData.fitnessLevel === l
-                    ? 'bg-primary/20 border-primary text-primary'
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                    ? 'bg-teal-50 border-teal-500 text-teal-800'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                 >
                   <div className="mb-1 flex justify-center">
@@ -118,7 +119,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, initialData 
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-400">Primary Goal</label>
+            <label className="text-xs font-black uppercase tracking-wide text-slate-500">Primary Goal</label>
             <div className="grid grid-cols-3 gap-2">
               {Object.values(Goal).map(g => (
                 <button
@@ -126,8 +127,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, initialData 
                   type="button"
                   onClick={() => handleChange('goal', g)}
                   className={`p-3 rounded-xl border text-sm font-medium transition-all ${formData.goal === g
-                    ? 'bg-secondary/20 border-secondary text-secondary'
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                    ? 'bg-amber-50 border-amber-500 text-amber-800'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                 >
                   {g}

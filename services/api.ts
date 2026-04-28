@@ -22,6 +22,51 @@ import { auth, db } from "../firebaseConfig";
 import { UserProfile, ExerciseLog } from "../types";
 
 // ======================================================================
+// ERROR MESSAGE HELPER
+// ======================================================================
+
+/**
+ * Convert Firebase error codes to user-friendly messages
+ */
+export function getFriendlyErrorMessage(error: any): string {
+  if (!error?.code) {
+    return "An error occurred. Please try again.";
+  }
+
+  const code = error.code;
+  const message = error.message || "";
+
+  // Auth-specific errors
+  if (code === "auth/invalid-email") {
+    return "Please enter a valid email address.";
+  }
+  if (code === "auth/user-not-found") {
+    return "Email address not found. Please check and try again.";
+  }
+  if (code === "auth/wrong-password") {
+    return "Password is incorrect. Please try again.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "This email is already registered. Please log in instead.";
+  }
+  if (code === "auth/weak-password") {
+    return "Password must be at least 8 characters long.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Too many login attempts. Please try again later.";
+  }
+  if (code === "auth/invalid-action-code") {
+    return "This password reset link has expired. Please request a new one.";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "This authentication method is not available. Please contact support.";
+  }
+
+  // Default fallback
+  return "Authentication failed. Please try again.";
+}
+
+// ======================================================================
 // AUTH FUNCTIONS
 // ======================================================================
 

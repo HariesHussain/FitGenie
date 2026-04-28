@@ -19,12 +19,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, onAddMessage }) =>
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    const cleanInput = input.trim().slice(0, 1200);
+    if (!cleanInput) return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      text: input,
+      text: cleanInput,
       timestamp: Date.now()
     };
 
@@ -49,14 +50,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, onAddMessage }) =>
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] md:h-[600px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+    <div className="flex h-[calc(100vh-180px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-[650px]">
       {/* Header */}
-      <div className="bg-slate-900 p-4 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+      <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center gap-3">
+        <div className="w-10 h-10 bg-teal-50 rounded-2xl flex items-center justify-center">
             <Bot className="text-primary w-6 h-6" />
         </div>
         <div>
-            <h3 className="text-white font-bold">FitGenie Coach</h3>
+            <h3 className="text-slate-950 font-black">FitGenie Coach</h3>
             <p className="text-xs text-green-400 flex items-center gap-1">
                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Online
             </p>
@@ -73,10 +74,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, onAddMessage }) =>
         
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl p-4 ${
+            <div className={`max-w-[80%] rounded-lg p-4 ${
               msg.role === 'user' 
                 ? 'bg-primary text-white rounded-br-none' 
-                : 'bg-slate-800 text-slate-200 rounded-bl-none'
+                : 'bg-slate-100 text-slate-700 rounded-bl-none'
             }`}>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
             </div>
@@ -85,7 +86,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, onAddMessage }) =>
 
         {isTyping && (
           <div className="flex justify-start">
-             <div className="bg-slate-800 rounded-2xl p-4 rounded-bl-none flex gap-1">
+             <div className="bg-slate-100 rounded-lg p-4 rounded-bl-none flex gap-1">
                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></span>
                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-100"></span>
                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-200"></span>
@@ -96,18 +97,20 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, onAddMessage }) =>
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-4 bg-slate-900 border-t border-slate-800 flex gap-2">
+      <form onSubmit={handleSend} className="p-4 bg-slate-50 border-t border-slate-200 flex gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+          placeholder="Ask about workouts, meals, or recovery..."
+          maxLength={1200}
+          className="input-shell flex-1 rounded-xl px-4 py-3 placeholder:text-slate-400"
         />
         <button 
           type="submit" 
           disabled={!input.trim()}
-          className="bg-primary hover:bg-violet-500 disabled:opacity-50 disabled:hover:bg-primary text-white p-3 rounded-xl transition-colors"
+          className="rounded-xl bg-primary p-3 text-white transition-colors hover:bg-teal-700 disabled:opacity-50 disabled:hover:bg-primary"
+          aria-label="Send message"
         >
           <Send size={20} />
         </button>

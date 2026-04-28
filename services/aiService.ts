@@ -1,26 +1,5 @@
 import { UserProfile, WorkoutDay, MealPlan, Goal, Exercise, Meal, FitnessLevel, BodyPart, ChatMessage } from '../types';
-import { GoogleGenAI } from "@google/genai";
-
-// ==============================================================================
-// 🤖 REAL AI INTEGRATION (GEMINI API)
-// ==============================================================================
-
-/**
- * TODO: AFTER DOWNLOAD: PASTE YOUR GEMINI API KEY BELOW IF RUNNING LOCALLY
- *
- * 1. Go to https://aistudio.google.com/app/apikey to get a free API Key.
- * 2. Paste it inside the quotes for FALLBACK_API_KEY below.
- * 3. The code checks process.env.API_KEY first (for AI Studio), then uses this fallback.
- */
-const FALLBACK_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-
-const apiKey = process.env.API_KEY || FALLBACK_API_KEY;
-
-if (!apiKey) {
-  console.warn("⚠️ No API Key found. The Chat Coach will not work until you add a key in services/aiService.ts");
-}
-
-const ai = new GoogleGenAI({ apiKey: apiKey });
+import { auth } from '../firebaseConfig';
 
 // ==============================================================================
 // 🏋️ EXERCISE NAME CONSTANTS (Single Source of Truth)
@@ -315,32 +294,32 @@ export const generateMockWorkoutPlan = (profile: UserProfile): WorkoutDay[] => {
 // --- MEAL DATABASE ---
 const MEAL_DB = {
   breakfast: [
-    { name: 'Oatmeal with Berries', items: ['Oats', 'Blueberries', 'Honey', 'Almonds'], imgId: 1084 },
-    { name: 'Avocado Toast & Eggs', items: ['Whole Wheat Bread', 'Avocado', '2 Eggs', 'Chili Flakes'], imgId: 835 },
-    { name: 'Greek Yogurt Parfait', items: ['Greek Yogurt', 'Granola', 'Strawberries', 'Chia Seeds'], imgId: 429 },
-    { name: 'Protein Pancakes', items: ['Protein Powder', 'Banana', 'Egg Whites', 'Syrup'], imgId: 292 },
-    { name: 'Veggie Omelet', items: ['3 Eggs', 'Spinach', 'Mushrooms', 'Cheese'], imgId: 764 }
+    { name: 'Idli & Sambar', items: ['Idli (3 pcs)', 'Sambar', 'Coconut Chutney', 'Curd'], imgId: 1084 },
+    { name: 'Masala Dosa', items: ['Rice Dosa', 'Potato Filling', 'Sambar', 'Coconut Chutney'], imgId: 835 },
+    { name: 'Poha with Peanuts', items: ['Flattened Rice', 'Peanuts', 'Onion', 'Green Chili'], imgId: 429 },
+    { name: 'Upma with Vegetables', items: ['Semolina', 'Carrots', 'Peas', 'Green Beans'], imgId: 292 },
+    { name: 'Paratha with Curd', items: ['Wheat Paratha', 'Yogurt', 'Cucumber', 'Pickle'], imgId: 764 }
   ],
   lunch: [
-    { name: 'Grilled Chicken Salad', items: ['Chicken Breast', 'Mixed Greens', 'Olive Oil', 'Tomatoes'], imgId: 1080 },
-    { name: 'Quinoa Power Bowl', items: ['Quinoa', 'Chickpeas', 'Cucumber', 'Feta Cheese'], imgId: 493 },
-    { name: 'Turkey Wrap', items: ['Whole Wheat Wrap', 'Turkey Slices', 'Lettuce', 'Mustard'], imgId: 25 },
-    { name: 'Tuna Salad', items: ['Tuna', 'Celery', 'Mayo', 'Lettuce'], imgId: 692 },
-    { name: 'Salmon Poke Bowl', items: ['Rice', 'Salmon', 'Edamame', 'Seaweed'], imgId: 22 }
+    { name: 'Tandoori Chicken & Rice', items: ['Tandoori Chicken', 'Basmati Rice', 'Lemon', 'Spices'], imgId: 1080 },
+    { name: 'Dal Makhani with Naan', items: ['Black Lentils', 'Cream', 'Naan Bread', 'Butter'], imgId: 493 },
+    { name: 'Paneer Tikka Salad', items: ['Paneer Cubes', 'Bell Peppers', 'Onion', 'Mint'], imgId: 25 },
+    { name: 'Chole Bhature', items: ['Chickpeas Curry', 'Fried Bread', 'Pickle', 'Onion'], imgId: 692 },
+    { name: 'Biryani with Raita', items: ['Basmati Rice', 'Chicken/Vegetables', 'Yogurt Sauce', 'Spices'], imgId: 22 }
   ],
   dinner: [
-    { name: 'Baked Salmon & Asparagus', items: ['Salmon Fillet', 'Asparagus', 'Lemon', 'Garlic'], imgId: 420 },
-    { name: 'Steak & Sweet Potato', items: ['Lean Steak', 'Sweet Potato', 'Green Beans'], imgId: 106 },
-    { name: 'Tofu Stir-Fry', items: ['Tofu', 'Broccoli', 'Bell Peppers', 'Soy Sauce'], imgId: 292 },
-    { name: 'Chicken Burrito Bowl', items: ['Chicken', 'Black Beans', 'Rice', 'Salsa'], imgId: 727 },
-    { name: 'Zucchini Noodles', items: ['Zucchini', 'Marinara Sauce', 'Turkey Meatballs'], imgId: 526 }
+    { name: 'Butter Chicken & Rice', items: ['Chicken', 'Tomato Cream', 'Rice', 'Spices'], imgId: 420 },
+    { name: 'Fish Curry & Roti', items: ['Fish', 'Coconut Curry', 'Wheat Roti', 'Turmeric'], imgId: 106 },
+    { name: 'Chana Masala with Roti', items: ['Chickpeas', 'Tomato Sauce', 'Wheat Roti', 'Ginger'], imgId: 292 },
+    { name: 'Shahi Paneer', items: ['Paneer', 'Cream Sauce', 'Basmati Rice', 'Cashews'], imgId: 727 },
+    { name: 'Aloo Gobi with Bajra Roti', items: ['Potato', 'Cauliflower', 'Pearl Millet Roti', 'Spices'], imgId: 526 }
   ],
   snack: [
-    { name: 'Apple & Peanut Butter', items: ['Apple', 'Peanut Butter'], imgId: 102 },
-    { name: 'Protein Shake', items: ['Whey Protein', 'Water/Milk'], imgId: 902 },
-    { name: 'Almonds & Dark Chocolate', items: ['Almonds', 'Dark Chocolate Square'], imgId: 822 },
-    { name: 'Cottage Cheese', items: ['Cottage Cheese', 'Pineapple'], imgId: 1060 },
-    { name: 'Rice Cakes', items: ['Rice Cakes', 'Hummus'], imgId: 674 }
+    { name: 'Samosa with Chutney', items: ['Fried Pastry', 'Potato Filling', 'Mint Chutney'], imgId: 102 },
+    { name: 'Dhokla', items: ['Gram Flour Cake', 'Sesame Seeds', 'Green Chili'], imgId: 902 },
+    { name: 'Moong Dal Pakora', items: ['Gram Flour', 'Moong Dal', 'Spices', 'Oil'], imgId: 822 },
+    { name: 'Lassi with Almonds', items: ['Yogurt', 'Milk', 'Almonds', 'Cardamom'], imgId: 1060 },
+    { name: 'Bhel Puri', items: ['Puffed Rice', 'Tamarind Chutney', 'Cucumber', 'Onion'], imgId: 674 }
   ]
 };
 
@@ -388,31 +367,36 @@ export const generateDailyMealPlan = (profile: UserProfile): MealPlan => {
  */
 export const getAiChatResponse = async (currentMessage: string, history: ChatMessage[]): Promise<string> => {
   try {
-    if (!ai) return "AI Service not initialized. Please check your API Key.";
+    const cleanMessage = currentMessage.trim().slice(0, 1200);
+    if (!cleanMessage) return "Please send a fitness, workout, or nutrition question.";
 
-    // Map existing history to Gemini SDK format
-    const historyForGemini = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }],
+    const safeHistory = history.slice(-12).map((msg) => ({
+      role: msg.role,
+      text: msg.text.slice(0, 1200),
     }));
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. " +
-          "You provide personalized workout plans, nutritional advice, form correction tips, and motivation. " +
-          "When a user asks for a workout (e.g., 'leg day'), provide a structured list of exercises with sets and reps. " +
-          "When asked about diet, provide specific meal examples with macros. " +
-          "Keep your tone energetic, professional, and encouraging. " +
-          "If a user asks a medical question, disclaim that you are an AI and suggest seeing a professional.",
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      history: historyForGemini
+      body: JSON.stringify({
+        message: cleanMessage,
+        history: safeHistory,
+      }),
     });
 
-    const result = await chat.sendMessage({ message: currentMessage });
-    return result.text || "I'm having trouble thinking of a response right now. Try again!";
+    const result = (await response.json()) as { reply?: string; error?: string };
+    if (!response.ok) {
+      return result.error || "The AI coach is temporarily unavailable. Please try again shortly.";
+    }
+
+    return result.reply || "I'm having trouble thinking of a response right now. Try again!";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "I'm currently offline or having trouble connecting to the server. Please check your internet or API Key.";
+    console.error("AI proxy error:", error);
+    return "The AI coach is temporarily unavailable. Please try again shortly.";
   }
 };

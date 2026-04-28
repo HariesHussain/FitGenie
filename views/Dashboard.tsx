@@ -2,9 +2,9 @@ import React from 'react';
 import { UserProfile, WorkoutDay, MealPlan, FitnessLevel, BodyPart } from '../types';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { CheckCircle, Trophy, ArrowRight, Dumbbell, RefreshCcw } from 'lucide-react';
-import { PieChart, Pie, Cell } from 'recharts';
-import { StickyFooter } from '../components/StickyFooter';
+import { Activity, ArrowRight, Dumbbell, Flame, RefreshCcw, ShieldCheck, Target, Trophy } from 'lucide-react';
+import { Cell, Pie, PieChart } from 'recharts';
+import { useSEO } from '../hooks/useSEO';
 
 interface DashboardProps {
   user?: UserProfile | null;
@@ -15,158 +15,175 @@ interface DashboardProps {
   onResetWorkout: () => void;
 }
 
+const bodyPartHints: Record<string, string> = {
+  'Full Body': 'Balanced strength',
+  Chest: 'Pressing power',
+  Back: 'Pull strength',
+  Legs: 'Lower-body drive',
+  Shoulders: 'Overhead control',
+  Arms: 'Accessory focus',
+  Core: 'Stability work',
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealPlan, onNavigate, onUpdateWorkout, onResetWorkout }) => {
-  // Use the fitness level from user profile (set during onboarding)
+  useSEO({
+    title: 'Dashboard',
+    description: 'View your AI-generated daily workout, track nutrition macros, and monitor your fitness journey.',
+    keywords: 'AI fitness dashboard, workout planner, nutrition tracker, daily macros'
+  });
+
   const userLevel = (user?.fitnessLevel as FitnessLevel) ?? FitnessLevel.BEGINNER;
-
-  const hasActiveWorkout = !!todaysWorkout;
-
   const completedCount = todaysWorkout?.exercises?.filter(e => e.completed).length || 0;
   const totalCount = todaysWorkout?.exercises?.length || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const handleGenerate = (target: BodyPart) => {
-    onUpdateWorkout(target, userLevel);
-  };
-
-  // Pie chart data
-  const data = mealPlan ? [
-    { name: 'Protein', value: mealPlan.breakfast.protein * 4, color: '#7c3aed' },
-    { name: 'Carbs', value: mealPlan.breakfast.carbs * 4, color: '#22d3ee' },
-    { name: 'Fat', value: mealPlan.breakfast.fats * 4, color: '#f59e0b' },
+  const chartData = mealPlan ? [
+    { name: 'Protein', value: mealPlan.totalCalories * 0.3, color: '#0ea5e9' }, // primary
+    { name: 'Carbs', value: mealPlan.totalCalories * 0.4, color: '#f59e0b' },   // secondary
+    { name: 'Fats', value: mealPlan.totalCalories * 0.3, color: '#64748b' },    // muted
   ] : [];
 
   return (
-    <div className="space-y-6 relative">
-      {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            Hello, {user?.name ? user.name.split(' ')[0] : 'Guest'} 👋
-          </h1>
-          <p className="text-slate-400">Let's crush your {user?.goal ? user.goal.toLowerCase() : 'fitness'} goals today.</p>
-        </div>
-        <div className="hidden md:flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-800">
-          <span className="text-xs text-slate-400 font-medium">{userLevel}</span>
-        </div>
-      </div>
-
-      {/* --- WORKOUT SELECTION LOGIC --- */}
-      {!hasActiveWorkout ? (
-        <div className="animate-fade-in space-y-4">
-          <Card className="border-primary bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">What are we training today?</h2>
-              <p className="text-slate-400">Select a muscle group to generate your personalized session.</p>
-              <p className="text-xs text-slate-500 mt-1">Level: <span className="text-primary font-bold">{userLevel}</span></p>
+    <div className="space-y-6 animate-fade-in">
+      <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr] animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        <div className="rounded-[2rem] border border-slate-200 bg-surface p-6 shadow-soft transition-all duration-300 hover:shadow-float sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-widest text-primary">Dashboard</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-textMain font-heading sm:text-4xl">
+                {user?.name ? user.name.split(' ')[0] + ',' : 'Hello,'} let's train
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-textMuted sm:text-base">
+                Your personal AI coach is ready to guide you through your fitness journey.
+              </p>
             </div>
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-3 text-right">
+              <p className="text-xs font-bold uppercase tracking-widest text-primaryDark">Level</p>
+              <p className="text-lg font-black text-slate-900">{userLevel}</p>
+            </div>
+          </div>
 
-            {/* Muscle Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.values(BodyPart).map((part) => (
+          <div className="mt-8 grid gap-4 grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-surfaceHighlight p-5 transition-transform hover:-translate-y-1">
+              <Activity className="h-6 w-6 text-primary" />
+              <p className="mt-3 text-3xl font-bold text-textMain">{Math.round(progress)}%</p>
+              <p className="text-sm font-medium text-textMuted mt-1">Progress</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-surfaceHighlight p-5 transition-transform hover:-translate-y-1">
+              <Flame className="h-6 w-6 text-secondary" />
+              <p className="mt-3 text-3xl font-bold text-textMain">{mealPlan?.totalCalories || 0}</p>
+              <p className="text-sm font-medium text-textMuted mt-1">Calories</p>
+            </div>
+          </div>
+        </div>
+
+        <Card className="bg-slate-900 border-none shadow-float flex flex-col justify-between text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-primary/20 blur-3xl"></div>
+          <div className="relative z-10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
+              <Trophy className="h-6 w-6 text-secondary" />
+            </div>
+            <h2 className="mt-6 text-2xl font-bold font-heading">Today's Workout</h2>
+            <p className="mt-1 text-[15px] leading-relaxed text-slate-300">
+              {todaysWorkout ? todaysWorkout.day : 'Select a muscle group to start.'}
+            </p>
+          </div>
+          {todaysWorkout ? (
+            <div className="mt-8 relative z-10">
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-primary transition-all duration-1000 ease-out" style={{ width: `${progress}%` }} />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-sm font-medium text-slate-300">
+                <span>{completedCount}/{totalCount} done</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <div className="mt-6 flex gap-3">
+                <Button variant="primary" className="!bg-primary hover:!bg-primaryDark flex-1 justify-center shadow-soft" onClick={() => onNavigate('workout')}>
+                  Open workout <ArrowRight size={18} className="ml-2" />
+                </Button>
+                <Button variant="outline" className="!text-white !border-white/20 hover:!bg-white/10" onClick={onResetWorkout} aria-label="Change muscle group">
+                  <RefreshCcw size={18} />
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+      </section>
+
+        <Card className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-widest text-primary">Pick a Muscle</p>
+              <h2 className="mt-2 text-2xl font-bold text-textMain font-heading">Choose your focus</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-xl border border-slate-200 bg-surfaceHighlight px-4 py-1.5 text-xs font-bold tracking-wide text-textMuted">{userLevel}</span>
+              {todaysWorkout && (
+                <Button variant="outline" onClick={onResetWorkout} className="text-xs px-3" aria-label="Change muscle group">
+                  Change
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 mb-2 sm:grid-cols-2 lg:grid-cols-4">
+            {Object.values(BodyPart).map((part) => {
+              const isSelected = todaysWorkout && todaysWorkout.day?.toLowerCase().includes(part.toLowerCase());
+              return (
                 <button
                   key={part}
-                  onClick={() => handleGenerate(part)}
-                  className="group relative p-4 rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-primary hover:border-primary transition-all duration-300 flex flex-col items-center justify-center gap-3 overflow-hidden"
+                  onClick={() => onUpdateWorkout(part, userLevel)}
+                  className={`group rounded-2xl border p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-float focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 focus:ring-primary'
+                      : 'border-slate-200 bg-surface hover:border-primary focus:ring-primary'
+                  }`}
                 >
-                  <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                  <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Dumbbell className="w-6 h-6 text-slate-300 group-hover:text-primary" />
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
+                    isSelected
+                      ? 'bg-primary text-white'
+                      : 'bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white'
+                  }`}>
+                    <Dumbbell className="h-6 w-6" />
                   </div>
-                  <span className="font-bold text-white">{part}</span>
+                  <h3 className="mt-5 font-bold text-textMain font-heading text-lg">{part}</h3>
+                  <p className="mt-1 text-sm text-textMuted font-medium">{bodyPartHints[part] || 'Focused session'}</p>
                 </button>
-              ))}
-            </div>
-          </Card>
-        </div>
-      ) : (
-        /* --- ACTIVE WORKOUT VIEW --- */
-        <Card className="relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-xl group-hover:bg-primary/20 transition-colors"></div>
-
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white">Today's Focus: {todaysWorkout.day}</h3>
-              </div>
-              <p className="text-slate-400 text-sm mt-1">Difficulty: {userLevel}</p>
-            </div>
-            <div className="bg-slate-950 p-2 rounded-lg">
-              <Trophy className="text-yellow-400 w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden">
-              <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">{completedCount}/{totalCount} exercises</span>
-              <span className="text-primary font-medium">{Math.round(progress)}% Complete</span>
-            </div>
-
-            <div className="flex gap-3 mt-4">
-              <Button variant="secondary" fullWidth className="text-sm py-3 font-bold" onClick={() => onNavigate('workout')}>
-                {progress > 0 ? 'Resume Workout' : 'Start Session'}
-              </Button>
-              <Button variant="outline" onClick={onResetWorkout} title="Change Muscle Group" className="px-4">
-                <div className="flex items-center gap-2">
-                  <RefreshCcw size={18} />
-                  <span className="hidden md:inline">Change Muscle</span>
-                </div>
-              </Button>
-            </div>
+              );
+            })}
           </div>
         </Card>
-      )}
 
-      {/* Nutrition Card */}
       {mealPlan && (
-        <Card className="relative overflow-hidden cursor-pointer hover:border-secondary/50 transition-colors" onClick={() => onNavigate('diet')}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
-
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="text-lg font-bold text-white">Nutrition Target</h3>
-              <p className="text-slate-400 text-sm">{mealPlan.totalCalories} kcal daily goal</p>
-            </div>
-            <div className="h-16 w-16">
-              <PieChart width={64} height={64}>
-                <Pie
-                  data={data}
-                  cx={32}
-                  cy={32}
-                  innerRadius={20}
-                  outerRadius={30}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                  ))}
+        <section className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <Card onClick={() => onNavigate('diet')} className="hover:border-secondary transition-all">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-widest text-secondary dark:text-amber-400">Daily Nutrition</p>
+                <h2 className="mt-2 text-2xl font-bold text-textMain dark:text-slate-100 font-heading">Macros</h2>
+                <p className="mt-1 text-[15px] text-textMuted dark:text-slate-400">{mealPlan.totalCalories} kcal</p>
+              </div>
+              <PieChart width={90} height={90} className="drop-shadow-sm">
+                <Pie data={chartData} cx={45} cy={45} innerRadius={28} outerRadius={42} paddingAngle={5} dataKey="value" stroke="none">
+                  {chartData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Pie>
               </PieChart>
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            <div className="text-center p-2 rounded-lg bg-slate-950 border border-slate-900">
-              <p className="text-[10px] uppercase text-slate-500 font-bold">Protein</p>
-              <p className="font-bold text-violet-400 text-sm">~{Math.round(mealPlan.totalCalories * 0.3 / 4)}g</p>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              <Macro label="Protein" value={`~${Math.round(mealPlan.totalCalories * 0.3 / 4)}g`} />
+              <Macro label="Carbs" value={`~${Math.round(mealPlan.totalCalories * 0.4 / 4)}g`} />
+              <Macro label="Fats" value={`~${Math.round(mealPlan.totalCalories * 0.3 / 9)}g`} />
             </div>
-            <div className="text-center p-2 rounded-lg bg-slate-950 border border-slate-900">
-              <p className="text-[10px] uppercase text-slate-500 font-bold">Carbs</p>
-              <p className="font-bold text-cyan-400 text-sm">~{Math.round(mealPlan.totalCalories * 0.4 / 4)}g</p>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-slate-950 border border-slate-900">
-              <p className="text-[10px] uppercase text-slate-500 font-bold">Fats</p>
-              <p className="font-bold text-amber-400 text-sm">~{Math.round(mealPlan.totalCalories * 0.3 / 9)}g</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </section>
       )}
-
-      <StickyFooter />
     </div>
   );
 };
+
+const Macro = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-2xl border border-slate-100 bg-surfaceHighlight p-3 text-center transition-colors hover:bg-slate-100">
+    <p className="text-[11px] font-bold uppercase tracking-wider text-textMuted">{label}</p>
+    <p className="mt-1.5 text-base font-bold text-textMain">{value}</p>
+  </div>
+);

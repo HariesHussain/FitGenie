@@ -76,7 +76,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg border border-teal-400/30 bg-teal-400/10 flex items-center justify-center">
                             <User className="w-6 h-6 text-white" />
                         </div>
                         My Profile
@@ -93,10 +93,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
 
             {/* Avatar / Name Hero */}
             <Card className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 pointer-events-none" />
                 <div className="relative flex items-center gap-5">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
-                        <span className="text-3xl font-bold text-white">
+                    <div className="w-20 h-20 rounded-lg border border-teal-400/30 bg-teal-400/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-3xl font-bold text-primary">
                             {(user.name || 'U').charAt(0).toUpperCase()}
                         </span>
                     </div>
@@ -251,15 +250,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
 
                     {/* Quick Stats Badges */}
                     <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-gradient-to-br from-violet-900/40 to-slate-900 border border-violet-800/30 rounded-xl p-4 text-center">
+                        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center">
                             <p className="text-2xl font-bold text-white">{user.weight}</p>
                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">kg</p>
                         </div>
-                        <div className="bg-gradient-to-br from-cyan-900/40 to-slate-900 border border-cyan-800/30 rounded-xl p-4 text-center">
+                        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center">
                             <p className="text-2xl font-bold text-white">{user.height}</p>
                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">cm</p>
                         </div>
-                        <div className="bg-gradient-to-br from-amber-900/40 to-slate-900 border border-amber-800/30 rounded-xl p-4 text-center">
+                        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center">
                             <p className="text-2xl font-bold text-white">
                                 {(user.weight / ((user.height / 100) ** 2)).toFixed(1)}
                             </p>

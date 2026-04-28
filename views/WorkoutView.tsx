@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { WorkoutDay } from '../types';
 import { Card } from '../components/Card';
-import { Check, PlayCircle, Info, ImageOff } from 'lucide-react';
+import { Check, Dumbbell, ListChecks } from 'lucide-react';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { getVideoUrl } from '../services/aiService';
-
 
 interface WorkoutViewProps {
   plan: WorkoutDay[];
@@ -12,80 +11,86 @@ interface WorkoutViewProps {
 }
 
 export const WorkoutView: React.FC<WorkoutViewProps> = ({ plan, onToggleExercise }) => {
-  // Logic allows for multiple plans, but currently we just edit today's plan (index 0)
   const activeDayIndex = 0;
   const dayPlan = plan[activeDayIndex];
 
-  // State to track failed videos so we can show a fallback UI (kept for compatibility)
-  const [videoErrors, setVideoErrors] = useState<Record<string, boolean>>({});
-
-  const handleVideoError = (id: string) => {
-    setVideoErrors(prev => ({ ...prev, [id]: true }));
-  };
-
   if (!dayPlan) {
-    return <div className="text-center text-slate-400 mt-10">No workout selected. Please go back to Dashboard.</div>;
+    return (
+      <Card className="mx-auto max-w-xl text-center">
+        <Dumbbell className="mx-auto h-10 w-10 text-slate-400" />
+        <h2 className="mt-4 text-xl font-black text-slate-950">No workout selected</h2>
+        <p className="mt-2 text-sm text-slate-600">Open the dashboard and choose a muscle group to generate today's training session.</p>
+      </Card>
+    );
   }
 
+  const completed = dayPlan.exercises.filter((exercise) => exercise.completed).length;
+  const total = dayPlan.exercises.length;
+  const progress = total ? Math.round((completed / total) * 100) : 0;
+
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">{dayPlan.day}</h2>
-        <p className="text-slate-400">Focus on form and controlled movements.</p>
-      </div>
-
-      {dayPlan.exercises.map((exercise) => (
-        <Card
-          key={exercise.id}
-          className={`transition-all duration-300 overflow-hidden p-0 ${exercise.completed ? 'opacity-50 border-green-900' : ''}`}
-        >
-          {/* Video / Visual Section (supports mp4 and YouTube + graceful fallback) */}
-          <div className="relative w-full bg-black group">
-            <VideoPlayer url={getVideoUrl(exercise.name)} title={exercise.name} />
+    <div className="space-y-6">
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-teal-700">Workout session</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">{dayPlan.day}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Watch the full movement, complete each exercise, and keep the session moving with controlled form.
+            </p>
           </div>
-
-          {/* Overlay Badge */}
-          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 z-10">
-            <span className="text-xs font-bold text-white uppercase">{exercise.muscleGroup}</span>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Complete</p>
+            <p className="text-2xl font-black text-slate-950">{progress}%</p>
           </div>
+        </div>
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-teal-700 transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      </section>
 
-          {/* Controls Section */}
-          <div className="p-4" onClick={() => onToggleExercise(activeDayIndex, exercise.id)}>
-            <div className="flex items-center gap-4 cursor-pointer">
-              {/* Checkbox */}
-              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${exercise.completed
-                  ? 'bg-green-500 border-green-500'
-                  : 'border-slate-600 hover:border-primary bg-slate-900'
-                }`}>
-                {exercise.completed && <Check size={18} className="text-white" />}
-              </div>
+      <section className="grid gap-5 lg:grid-cols-2">
+        {dayPlan.exercises.map((exercise) => (
+          <Card
+            key={exercise.id}
+            className={`overflow-hidden p-0 ${exercise.completed ? 'border-emerald-300 bg-emerald-50/60' : ''}`}
+          >
+            <div className="relative bg-slate-100">
+              <VideoPlayer url={getVideoUrl(exercise.name)} title={exercise.name} />
+              <span className="absolute left-3 top-3 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
+                {exercise.muscleGroup}
+              </span>
+            </div>
 
-              {/* Details */}
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className={`font-bold text-lg ${exercise.completed ? 'text-slate-400 line-through' : 'text-white'}`}>
+            <div className="p-5">
+              <div className="flex items-start gap-4">
+                <button
+                  onClick={() => onToggleExercise(activeDayIndex, exercise.id)}
+                  className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-2 transition-all ${
+                    exercise.completed
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-slate-300 bg-white text-slate-400 hover:border-teal-600 hover:text-teal-700'
+                  }`}
+                  aria-label={`Mark ${exercise.name} complete`}
+                >
+                  {exercise.completed ? <Check size={20} /> : <ListChecks size={20} />}
+                </button>
+
+                <div className="min-w-0 flex-1">
+                  <h2 className={`text-lg font-black ${exercise.completed ? 'text-slate-500 line-through' : 'text-slate-950'}`}>
                     {exercise.name}
-                  </h4>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-400">
-                  <span className="bg-slate-800 px-2 py-0.5 rounded text-white font-mono">{exercise.sets} Sets</span>
-                  <span className="bg-slate-800 px-2 py-0.5 rounded text-white font-mono">{exercise.reps} Reps</span>
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">{exercise.equipment}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">{exercise.sets} sets</span>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">{exercise.reps} reps</span>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {exercise.completed && (
-              <div className="mt-3 text-center text-green-400 text-xs font-bold uppercase tracking-wider animate-pulse">
-                Completed
-              </div>
-            )}
-          </div>
-        </Card>
-      ))}
-
-      <div className="pt-8 pb-4 text-center">
-        <p className="text-slate-500 text-sm italic">Tap circle to mark as complete</p>
-      </div>
+          </Card>
+        ))}
+      </section>
     </div>
   );
 };

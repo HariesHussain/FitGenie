@@ -8,23 +8,8 @@ interface VideoPlayerProps {
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  const [maxHeight, setMaxHeight] = useState<string>("360px");
-
-  // responsive maxHeight: keep mobile smaller and desktop capped
-  useEffect(() => {
-    const calc = () => {
-      const w = window.innerWidth;
-      if (w < 640) setMaxHeight("42vh"); // mobile — keep it tall but not huge
-      else if (w < 1024) setMaxHeight("320px"); // tablet-ish
-      else setMaxHeight("360px"); // desktop cap
-    };
-    calc();
-    window.addEventListener("resize", calc);
-    return () => window.removeEventListener("resize", calc);
-  }, []);
 
   useEffect(() => {
-    // reset loading state when url changes
     setLoaded(false);
     setErrored(false);
   }, [url]);
@@ -52,42 +37,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
 
   const openInNewTab = () => {
     if (!url) return;
-    window.open(url, "_blank");
-  };
-
-  // A small shared wrapper style so element doesn't grow too large and doesn't push content
-  const wrapperStyle: React.CSSProperties = {
-    aspectRatio: "16 / 9",
-    maxHeight,
-    width: "100%",
-    overflow: "hidden",
-    background: "#000",
-    borderRadius: 12,
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
-    <div className="w-full" style={{ marginBottom: 6 }}>
-      {/* Media wrapper */}
-      <div style={wrapperStyle} className="relative">
-        {/* Loading spinner */}
+    <div className="w-full">
+      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
         {!loaded && !errored && (
-          <div
-            className="absolute inset-0 z-20 flex items-center justify-center"
-            style={{ pointerEvents: "none" }}
-          >
-            <div className="w-10 h-10 rounded-full border-2 border-white/20 flex items-center justify-center">
-              <div className="animate-spin w-5 h-5 border-t-2 border-white/60 rounded-full" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/30">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
             </div>
           </div>
         )}
 
-        {/* YouTube embed branch */}
         {videoId ? (
           <>
             <iframe
               src={embedUrl}
               title={title || "Exercise video"}
-              className="w-full h-full"
+              className="h-full w-full"
               style={{ border: "0", display: errored ? "none" : "block" }}
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
@@ -95,12 +64,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
               onError={() => setErrored(true)}
             />
             {errored && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-white">
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950 text-white">
                 <div className="mb-3 text-sm">Video cannot be embedded here.</div>
                 <button
                   onClick={openInNewTab}
-                  className="px-3 py-2 rounded bg-primary text-white text-sm"
-                  style={{ cursor: "pointer" }}
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-slate-950"
                 >
                   Open video
                 </button>
@@ -108,28 +76,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
             )}
           </>
         ) : (
-          // Local video branch
           <>
             <video
               src={url}
-              className="w-full h-full"
-              style={{ objectFit: "contain", background: "black", display: errored ? "none" : "block" }}
+              className="h-full w-full object-contain"
+              style={{ display: errored ? "none" : "block" }}
+              preload="metadata"
               autoPlay
               muted
               loop
               playsInline
               onCanPlay={() => setLoaded(true)}
               onError={() => setErrored(true)}
-              // prevent focusing controls accidentally
               controls={false}
             />
             {errored && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-white">
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950 text-white">
                 <div className="mb-3 text-sm">Video cannot be played here.</div>
                 <button
                   onClick={openInNewTab}
-                  className="px-3 py-2 rounded bg-primary text-white text-sm"
-                  style={{ cursor: "pointer" }}
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-slate-950"
                 >
                   Open video
                 </button>

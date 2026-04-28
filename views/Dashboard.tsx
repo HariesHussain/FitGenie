@@ -72,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
             <div className="rounded-2xl border border-slate-200 bg-surfaceHighlight p-5 transition-transform hover:-translate-y-1">
               <Flame className="h-6 w-6 text-secondary" />
               <p className="mt-3 text-3xl font-bold text-textMain">{mealPlan?.totalCalories || 0}</p>
-              <p className="text-sm font-medium text-textMuted mt-1">Calories</p>
+              <p className="text-sm font-medium text-textMuted mt-1">Calorie Target</p>
             </div>
           </div>
         </div>

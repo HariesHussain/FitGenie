@@ -1,10 +1,12 @@
-import React from 'react';
-import { UserProfile, WorkoutDay, MealPlan, FitnessLevel, BodyPart } from '../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { UserProfile, WorkoutDay, MealPlan, FitnessLevel, BodyPart, ExerciseLog } from '../types';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { Activity, ArrowRight, Dumbbell, Flame, RefreshCcw, ShieldCheck, Target, Trophy } from 'lucide-react';
+import { Activity, ArrowRight, Dumbbell, Flame, RefreshCcw, Trophy } from 'lucide-react';
 import { Cell, Pie, PieChart } from 'recharts';
 import { useSEO } from '../hooks/useSEO';
+import { auth } from '../firebaseConfig';
+import { loadExerciseLogs } from '../services/api';
 
 interface DashboardProps {
   user?: UserProfile | null;
@@ -36,6 +38,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
   const completedCount = todaysWorkout?.exercises?.filter(e => e.completed).length || 0;
   const totalCount = todaysWorkout?.exercises?.length || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const [logs, setLogs] = useState<ExerciseLog[]>([]);
+
+  useEffect(() => {
+    const uid = auth.currentUser?.uid || (user as any)?.uid || (user as any)?.id;
+    if (!uid) return;
+    loadExerciseLogs(uid).then(setLogs).catch(() => setLogs([]));
+  }, [user]);
+
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const todayLogs = useMemo(() => logs.filter((l) => l.date === todayStr), [logs, todayStr]);
+  const estimateCalories = (log: ExerciseLog) => {
+    const bodyWeight = Number(user?.weight || 70);
+    const minutes = log.duration > 0 ? log.duration : Math.max(4, Math.round((log.sets * (log.reps || 10)) / 20));
+    const met = 6;
+    return Math.round((met * 3.5 * bodyWeight / 200) * minutes);
+  };
+  const burnedToday = todayLogs.reduce((sum, l) => sum + estimateCalories(l), 0);
+
+  const streakDays = useMemo(() => {
+    const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
+    if (dates.length === 0) return 0;
+    let streak = 0;
+    const cursor = new Date();
+    if (!dates.includes(cursor.toLocaleDateString('en-CA'))) {
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    for (let i = 0; i < 365; i++) {
+      const key = cursor.toLocaleDateString('en-CA');
+      if (dates.includes(key)) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [logs]);
 
   const chartData = mealPlan ? [
     { name: 'Protein', value: mealPlan.totalCalories * 0.3, color: '#0ea5e9' }, // primary
@@ -46,33 +85,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
   return (
     <div className="space-y-6 animate-fade-in">
       <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr] animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <div className="rounded-[2rem] border border-slate-200 bg-surface p-6 shadow-soft transition-all duration-300 hover:shadow-float sm:p-8">
+        <div className="rounded-3xl border border-slate-200 bg-surface p-3 shadow-soft transition-all duration-300 hover:shadow-float sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-widest text-primary">Dashboard</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-textMain font-heading sm:text-4xl">
+              <h1 className="mt-1 text-[1.75rem] font-bold tracking-tight text-textMain font-heading sm:text-4xl">
                 {user?.name ? user.name.split(' ')[0] + ',' : 'Hello,'} let's train
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-textMuted sm:text-base">
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-textMuted sm:text-base">
                 Your personal AI coach is ready to guide you through your fitness journey.
               </p>
             </div>
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-3 text-right">
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-right">
               <p className="text-xs font-bold uppercase tracking-widest text-primaryDark">Level</p>
-              <p className="text-lg font-black text-slate-900">{userLevel}</p>
+              <p className="text-base font-black text-slate-900">{userLevel}</p>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-surfaceHighlight p-5 transition-transform hover:-translate-y-1">
-              <Activity className="h-6 w-6 text-primary" />
-              <p className="mt-3 text-3xl font-bold text-textMain">{Math.round(progress)}%</p>
-              <p className="text-sm font-medium text-textMuted mt-1">Progress</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
+              <Activity className="h-3.5 w-3.5 text-primary" />
+              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{Math.round(progress)}%</p>
+              <p className="text-[11px] font-medium text-textMuted mt-1">Progress</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-surfaceHighlight p-5 transition-transform hover:-translate-y-1">
-              <Flame className="h-6 w-6 text-secondary" />
-              <p className="mt-3 text-3xl font-bold text-textMain">{mealPlan?.totalCalories || 0}</p>
-              <p className="text-sm font-medium text-textMuted mt-1">Calorie Target</p>
+            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
+              <Flame className="h-3.5 w-3.5 text-secondary" />
+              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{burnedToday}</p>
+              <p className="text-[11px] font-medium text-textMuted mt-1">Burned</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
+              <Flame className="h-3.5 w-3.5 text-amber-500" />
+              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{mealPlan?.totalCalories || 0}</p>
+              <p className="text-[11px] font-medium text-textMuted mt-1">Target</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
+              <Trophy className="h-3.5 w-3.5 text-teal-600" />
+              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{streakDays}d</p>
+              <p className="text-[11px] font-medium text-textMuted mt-1">Streak</p>
             </div>
           </div>
         </div>
@@ -132,7 +181,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
               return (
                 <button
                   key={part}
-                  onClick={() => onUpdateWorkout(part, userLevel)}
+                  onClick={() => {
+                    onUpdateWorkout(part, userLevel);
+                    onNavigate('workout');
+                  }}
                   className={`group rounded-2xl border p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-float focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     isSelected
                       ? 'border-primary bg-primary/10 focus:ring-primary'

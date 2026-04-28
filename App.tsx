@@ -75,6 +75,11 @@ const App = () => {
   // Auto-login via Firebase Auth
   useEffect(() => {
     let isMounted = true;
+    const authWatchdog = window.setTimeout(() => {
+      if (isMounted) {
+        setIsAuthLoading(false);
+      }
+    }, 4000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!isMounted) return;
@@ -166,6 +171,7 @@ const App = () => {
                   if (prev === 'update-password') return prev;
                   return 'dashboard';
                 });
+                setIsAuthLoading(false);
                 return;
               }
             } catch (e) {
@@ -192,6 +198,7 @@ const App = () => {
 
     return () => {
       isMounted = false;
+      window.clearTimeout(authWatchdog);
       unsubscribe();
     };
   }, []);

@@ -313,22 +313,10 @@ const App = () => {
     // 3. Android: Download APK or show build instructions
     if (isAndroid) {
       const apkUrl = import.meta.env.VITE_ANDROID_APK_URL || '/fitgenie-latest.apk';
-
-      // Production or Development: Download real APK (must exist and be valid)
-      try {
-        const check = await fetch(apkUrl, { method: 'HEAD' });
-        if (!check.ok) {
-          alert('❌ APK file not found at: ' + apkUrl + '\n\nTo fix:\n1. Build signed APK: npx cap build android\n2. Upload to /public/fitgenie-latest.apk\n3. Redeploy');
-          return;
-        }
-        
-        // Start download
-        window.location.href = apkUrl;
-        setDownloadHint('✓ APK download started. Check your Downloads folder.');
-      } catch (err) {
-        console.error('APK download error:', err);
-        alert('⚠️ Could not download APK. Check your internet connection.');
-      }
+      
+      // Start download directly without fetch check (avoids CORS issues on GitHub URLs)
+      window.location.href = apkUrl;
+      setDownloadHint('✓ APK download started. Check your Downloads folder.');
       return;
     }
 
@@ -420,21 +408,12 @@ const App = () => {
       setMessages([]);
       setTempAuthData({});
 
-      // Only clear guest data if they had a Firebase account (not a guest)
-      if (!isGuest) {
-        localStorage.removeItem('fitgenie_user');
-        localStorage.removeItem('fitgenie_workout');
-        localStorage.removeItem('fitgenie_meal');
-        localStorage.removeItem('fitgenie_messages');
-        localStorage.removeItem('fitgenie_history');
-      } else {
-        // For guests, preserve their session data by not clearing fitgenie_user
-        // Clear only transient data
-        localStorage.removeItem('fitgenie_workout');
-        localStorage.removeItem('fitgenie_meal');
-        localStorage.removeItem('fitgenie_messages');
-        localStorage.removeItem('fitgenie_history');
-      }
+      // Clear session data for everyone
+      localStorage.removeItem('fitgenie_user');
+      localStorage.removeItem('fitgenie_workout');
+      localStorage.removeItem('fitgenie_meal');
+      localStorage.removeItem('fitgenie_messages');
+      localStorage.removeItem('fitgenie_history');
 
       setView('landing');
     } catch (err: any) {

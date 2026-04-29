@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../components/Button';
 import { ArrowRight, Brain, Download, Dumbbell, LockKeyhole, ShieldCheck, TrendingUp, Utensils } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 type LandingProps = {
   onStart: () => void;
@@ -17,6 +18,8 @@ export const Landing = ({ onStart, onLogin, onSignup, onDownloadApp, downloadHin
     { icon: TrendingUp, title: 'Progress history', desc: 'Track exercise logs, weekly activity, and long-term consistency.' },
   ];
 
+  const isNative = Capacitor.isNativePlatform();
+
   return (
     <div className="app-surface min-h-screen overflow-hidden">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
@@ -30,14 +33,16 @@ export const Landing = ({ onStart, onLogin, onSignup, onDownloadApp, downloadHin
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onDownloadApp}
-            className="inline-flex items-center gap-1 rounded-xl border border-teal-300 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-800 shadow-sm hover:bg-teal-100 sm:hidden"
-            aria-label="Download App"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download App
-          </button>
+          {!isNative && (
+            <button
+              onClick={onDownloadApp}
+              className="inline-flex items-center gap-1 rounded-xl border border-teal-300 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-800 shadow-sm hover:bg-teal-100 sm:hidden"
+              aria-label="Download App"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download App
+            </button>
+          )}
           <button onClick={onLogin} className="whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50">
             Login
           </button>
@@ -65,9 +70,11 @@ export const Landing = ({ onStart, onLogin, onSignup, onDownloadApp, downloadHin
             <Button variant="outline" onClick={onStart} className="h-12 px-6">
               Try Guest Mode
             </Button>
-            <Button variant="outline" onClick={onDownloadApp} className="h-12 px-6 hidden sm:inline-flex lg:hidden">
-              <Download className="h-4 w-4" /> Download App
-            </Button>
+            {!isNative && (
+              <Button variant="outline" onClick={onDownloadApp} className="h-12 px-6 hidden sm:inline-flex lg:hidden">
+                <Download className="h-4 w-4" /> Download App
+              </Button>
+            )}
           </div>
           {downloadHint && (
             <p className="mt-3 text-sm font-semibold text-slate-600 lg:hidden">{downloadHint}</p>

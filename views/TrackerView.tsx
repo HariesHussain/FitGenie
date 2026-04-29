@@ -87,17 +87,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({ user }) => {
     const todayLogs = allLogs.filter(l => l.date === todayStr);
     const totalSets = todayLogs.reduce((s, l) => s + l.sets, 0);
 
-    // Simple estimate for calories burned from logged training volume.
-    const estimateCalories = (log: ExerciseLog) => {
-        const bodyWeight = Number(user?.weight || 70);
-        const minutes = log.duration > 0
-            ? log.duration
-            : Math.max(4, Math.round((log.sets * (log.reps || 10)) / 20));
-        const met = 6; // moderate/high resistance training
-        const kcal = (met * 3.5 * bodyWeight / 200) * minutes;
-        return Math.round(kcal);
-    };
-    const todayCaloriesBurned = todayLogs.reduce((sum, log) => sum + estimateCalories(log), 0);
+    // Calories tracking removed
 
     // Weekly data for chart
     const getLast7Days = () => {
@@ -204,7 +194,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({ user }) => {
             </div>
 
             {/* Streak + Today's Stats Row */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gradient-to-br from-amber-900/50 to-slate-900 border border-amber-700/30 rounded-xl p-4 text-center relative overflow-hidden">
                     <Award className="w-6 h-6 text-amber-400 mx-auto mb-1" />
                     <p className="text-3xl font-black text-white">{streak}</p>
@@ -215,11 +205,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({ user }) => {
                     <p className="text-3xl font-black text-white">{todayLogs.length}</p>
                     <p className="text-[10px] text-teal-400/80 uppercase font-bold tracking-wider">Today</p>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center relative overflow-hidden">
-                    <Flame className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-                    <p className="text-3xl font-black text-white">{todayCaloriesBurned}</p>
-                    <p className="text-[10px] text-orange-400/80 uppercase font-bold tracking-wider">kcal Burned</p>
-                </div>
+                {/* Calories card removed */}
                 <div className="bg-gradient-to-br from-cyan-900/50 to-slate-900 border border-cyan-700/30 rounded-xl p-4 text-center relative overflow-hidden">
                     <TrendingUp className="w-6 h-6 text-cyan-400 mx-auto mb-1" />
                     <p className="text-3xl font-black text-white">{totalSets}</p>

@@ -12,6 +12,11 @@ import { loginWithEmail, loadUserProfile, saveUserProfile, saveWorkoutData, load
 
 import { generateDailyMealPlan, generateTargetedWorkout } from './services/aiService';
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
 const Onboarding = React.lazy(() => import('./views/Onboarding').then(module => ({ default: module.Onboarding })));
 const Dashboard = React.lazy(() => import('./views/Dashboard').then(module => ({ default: module.Dashboard })));
 const WorkoutView = React.lazy(() => import('./views/WorkoutView').then(module => ({ default: module.WorkoutView })));
@@ -41,6 +46,8 @@ const App = () => {
   const [view, setView] = useState('landing');
   const [oobCode, setOobCode] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [downloadHint, setDownloadHint] = useState<string>('');
 
   // Helpers
   const getDateKey = (offset: number) => {
@@ -70,6 +77,25 @@ const App = () => {
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  }, []);
+
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const onAppInstalled = () => {
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    window.addEventListener('appinstalled', onAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', onAppInstalled);
+    };
   }, []);
 
   // Auto-login via Firebase Auth
@@ -261,6 +287,60 @@ const App = () => {
   const handleAuthNavigation = (target: "login" | "signup") => {
     setView(target);
   };
+
+  const handleDownloadApp = useCallback(async () => {
+    setDownloadHint('');
+    
+    // 1. Try native install prompt (PWA or Chrome)
+    if (installPrompt) {
+      await installPrompt.prompt();
+      try {
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === 'dismissed') {
+          setDownloadHint('Install prompt closed. You can tap Download App again anytime.');
+        }
+      } finally {
+        setInstallPrompt(null);
+      }
+      return;
+    }
+
+    // 2. Check device type
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIos = /iphone|ipad|ipod/.test(ua);
+    const isAndroid = /android/.test(ua);
+
+    // 3. Android: Download APK or show build instructions
+    if (isAndroid) {
+      const apkUrl = import.meta.env.VITE_ANDROID_APK_URL || '/fitgenie-latest.apk';
+
+      // Production or Development: Download real APK (must exist and be valid)
+      try {
+        const check = await fetch(apkUrl, { method: 'HEAD' });
+        if (!check.ok) {
+          alert('❌ APK file not found at: ' + apkUrl + '\n\nTo fix:\n1. Build signed APK: npx cap build android\n2. Upload to /public/fitgenie-latest.apk\n3. Redeploy');
+          return;
+        }
+        
+        // Start download
+        window.location.href = apkUrl;
+        setDownloadHint('✓ APK download started. Check your Downloads folder.');
+      } catch (err) {
+        console.error('APK download error:', err);
+        alert('⚠️ Could not download APK. Check your internet connection.');
+      }
+      return;
+    }
+
+    // 4. iOS: Show Safari instructions
+    if (isIos) {
+      setDownloadHint('📱 On iPhone/iPad:\n\n1. Open in Safari\n2. Tap Share button\n3. Tap "Add to Home Screen"\n4. Tap "Add"\n\nFitGenie will appear on your home screen as an app!');
+      return;
+    }
+
+    // 5. Desktop: Show PWA instructions
+    setDownloadHint('💻 To install FitGenie on your computer:\n\nChrome/Edge: Look for the install icon (⬇️) in address bar or 3-dot menu > "Install app"\n\nSafari: File > Add to Dock\n\nOr just use it as a web app!');
+  }, [installPrompt]);
 
   // Login — returns a promise so Auth.tsx can await it and catch errors
   const handleLoginSubmit = async (email: string, password: string) => {
@@ -528,6 +608,8 @@ const App = () => {
             onStart={handleStartGuest}
             onLogin={() => handleAuthNavigation('login')}
             onSignup={() => handleAuthNavigation('signup')}
+            onDownloadApp={handleDownloadApp}
+            downloadHint={downloadHint}
           />
         );
       case 'login':
@@ -614,6 +696,8 @@ const App = () => {
             onStart={handleStartGuest}
             onLogin={() => handleAuthNavigation('login')}
             onSignup={() => handleAuthNavigation('signup')}
+            onDownloadApp={handleDownloadApp}
+            downloadHint={downloadHint}
           />
         );
     }

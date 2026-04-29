@@ -48,13 +48,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
 
   const todayStr = new Date().toLocaleDateString('en-CA');
   const todayLogs = useMemo(() => logs.filter((l) => l.date === todayStr), [logs, todayStr]);
-  const estimateCalories = (log: ExerciseLog) => {
-    const bodyWeight = Number(user?.weight || 70);
-    const minutes = log.duration > 0 ? log.duration : Math.max(4, Math.round((log.sets * (log.reps || 10)) / 20));
-    const met = 6;
-    return Math.round((met * 3.5 * bodyWeight / 200) * minutes);
-  };
-  const burnedToday = todayLogs.reduce((sum, l) => sum + estimateCalories(l), 0);
+  // Calories tracking removed
 
   const streakDays = useMemo(() => {
     const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
@@ -108,16 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
               <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{Math.round(progress)}%</p>
               <p className="text-[11px] font-medium text-textMuted mt-1">Progress</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
-              <Flame className="h-3.5 w-3.5 text-secondary" />
-              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{burnedToday}</p>
-              <p className="text-[11px] font-medium text-textMuted mt-1">Burned</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
-              <Flame className="h-3.5 w-3.5 text-amber-500" />
-              <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{mealPlan?.totalCalories || 0}</p>
-              <p className="text-[11px] font-medium text-textMuted mt-1">Target</p>
-            </div>
+            {/* Calories removed */}
             <div className="rounded-xl border border-slate-200 bg-surfaceHighlight p-2.5">
               <Trophy className="h-3.5 w-3.5 text-teal-600" />
               <p className="mt-0.5 text-lg font-bold text-textMain leading-none">{streakDays}d</p>
@@ -213,7 +198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, todaysWorkout, mealP
               <div>
                 <p className="text-sm font-bold uppercase tracking-widest text-secondary dark:text-amber-400">Daily Nutrition</p>
                 <h2 className="mt-2 text-2xl font-bold text-textMain dark:text-slate-100 font-heading">Macros</h2>
-                <p className="mt-1 text-[15px] text-textMuted dark:text-slate-400">{mealPlan.totalCalories} kcal</p>
+                <p className="mt-1 text-[15px] text-textMuted dark:text-slate-400">Daily Targets</p>
               </div>
               <PieChart width={90} height={90} className="drop-shadow-sm">
                 <Pie data={chartData} cx={45} cy={45} innerRadius={28} outerRadius={42} paddingAngle={5} dataKey="value" stroke="none">

@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
 
 // IMPORTANT: Vite environment variables MUST start with VITE_
 const firebaseConfig = {
@@ -29,3 +29,8 @@ if (appCheckSiteKey) {
 // Export services to use in other files
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Enable offline persistence
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+  console.warn("Firestore offline persistence error:", err);
+});

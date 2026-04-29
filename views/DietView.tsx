@@ -27,7 +27,7 @@ export const DietView: React.FC<DietViewProps> = ({ mealPlan, onNextDay, onPrevD
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-amber-700">Nutrition planner</p>
             <h1 className="mt-1 text-3xl font-black text-slate-950">Daily Meal Plan</h1>
-            <p className="mt-2 text-sm text-slate-600">Total target: {mealPlan.totalCalories} kcal</p>
+            <p className="mt-2 text-sm text-slate-600">Daily Meals</p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
             <button onClick={onPrevDay} className="rounded-xl p-2 text-slate-500 hover:bg-white hover:text-slate-950" aria-label="Previous day">
@@ -72,7 +72,7 @@ export const DietView: React.FC<DietViewProps> = ({ mealPlan, onNextDay, onPrevD
             <div className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-black text-slate-950">{meal.data.name}</h2>
-                <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-800">{meal.data.calories} kcal</span>
+                {/* Removed kcal badge */}
               </div>
 
               <ul className="mt-4 grid gap-2">

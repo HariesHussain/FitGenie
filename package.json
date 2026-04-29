@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
   "name": "fitgenie",
   "private": true,
   "version": "0.0.0",
@@ -10,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
     "@google/genai": "^1.30.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^12.7.0",

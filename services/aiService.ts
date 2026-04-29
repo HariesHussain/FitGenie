@@ -361,6 +361,8 @@ export const generateDailyMealPlan = (profile: UserProfile): MealPlan => {
   };
 }
 
+import { GoogleGenAI } from '@google/genai';
+
 /**
  * GEMINI AI CHAT RESPONSE
  * Uses Gemini Flash 2.5 for fast, accurate fitness advice.
@@ -371,9 +373,24 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
     if (!cleanMessage) return "Please send a fitness, workout, or nutrition question.";
 
     const safeHistory = history.slice(-12).map((msg) => ({
-      role: msg.role,
+      role: msg.role === 'user' ? 'user' : 'model',
       text: msg.text.slice(0, 1200),
     }));
+
+    // If running in development and we have the API key, run it directly on the client
+    if (import.meta.env.DEV && import.meta.env.VITE_GEMINI_API_KEY) {
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const chat = ai.chats.create({
+        model: "gemini-2.5-flash",
+        config: { 
+          systemInstruction: "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. You provide personalized workout plans, nutritional advice, form correction tips, and motivation. When a user asks for a workout (e.g., leg day), provide a structured list of exercises with sets and reps. When asked about diet, provide specific meal examples with macros. Keep your tone energetic, professional, and encouraging. If a user asks a medical question, explain that you are not a medical professional and suggest seeing a qualified clinician." 
+        },
+        history: safeHistory.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
+      });
+
+      const result = await chat.sendMessage({ message: cleanMessage });
+      return result.text || "I'm having trouble thinking of a response right now. Try again!";
+    }
 
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
 

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
 const SYSTEM_INSTRUCTION =
   "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. " +
@@ -18,10 +19,9 @@ const GUEST_LIMIT_PER_MINUTE = 10;
 const AUTH_DAILY_QUOTA = 7;
 const GUEST_DAILY_QUOTA = 3;
 
+// In-memory rate limiting for per-minute checks (fast, OK to reset on restart)
 const rateMap = globalThis.__fitgenieRateMap || new Map();
 globalThis.__fitgenieRateMap = rateMap;
-const quotaMap = globalThis.__fitgenieQuotaMap || new Map();
-globalThis.__fitgenieQuotaMap = quotaMap;
 
 function sanitizeText(input, maxLen) {
   if (typeof input !== "string") return "";
@@ -63,31 +63,84 @@ function getDayBucket(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
-function consumeDailyQuota(subject, quotaLimit) {
-  const day = getDayBucket();
-  const key = `${subject}:${day}`;
-  const current = quotaMap.get(key) || 0;
+async function getFirestoreDb() {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-  if (current >= quotaLimit) {
+  if (!projectId || !clientEmail || !privateKey) {
+    return null;
+  }
+
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
+    });
+  }
+
+  return getFirestore();
+}
+
+/**
+ * Consume daily quota from Firestore.
+ * Uses a transaction to safely increment counter and check limit.
+ * Falls back gracefully if Firestore is unavailable.
+ */
+async function consumeDailyQuota(subject, quotaLimit) {
+  try {
+    const db = await getFirestoreDb();
+    if (!db) {
+      // Fallback: if Firestore not configured, reject request
+      console.warn("Firestore not configured; rejecting quota request");
+      return false;
+    }
+
+    const day = getDayBucket();
+    const quotaDocRef = db.doc(`ai_quotas/${subject}__${day}`);
+
+    // Use transaction for consistency
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(quotaDocRef);
+      const current = doc.exists ? (doc.data().count || 0) : 0;
+
+      if (current >= quotaLimit) {
+        return false; // Quota exhausted
+      }
+
+      // Increment and set TTL (expire after 2 days)
+      const ttlDate = new Date();
+      ttlDate.setDate(ttlDate.getDate() + 2);
+      transaction.set(
+        quotaDocRef,
+        { count: current + 1, expiresAt: ttlDate },
+        { merge: true }
+      );
+      return true;
+    });
+
+    return result;
+  } catch (error) {
+    console.error("consumeDailyQuota error:", error);
+    // On error, reject to be safe (don't grant unlimited quota)
     return false;
   }
-
-  quotaMap.set(key, current + 1);
-
-  if (quotaMap.size > 4000) {
-    for (const [k] of quotaMap) {
-      const bucket = k.split(":").pop();
-      if (bucket && bucket < getDayBucket(new Date(Date.now() - 2 * 86400000))) {
-        quotaMap.delete(k);
-      }
-    }
-  }
-
-  return true;
 }
 
 function setCors(req, res) {
-  const allowOrigin = process.env.APP_ORIGIN || "*";
+  const allowOrigin = process.env.APP_ORIGIN;
+  
+  // Production: APP_ORIGIN is required and must be explicitly set.
+  // Do not allow wildcard fallback; deny unknown origins.
+  if (!allowOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", "");
+    if (req.method === "OPTIONS") {
+      res.status(403).json({ error: "APP_ORIGIN not configured" });
+      return true;
+    }
+    // For actual requests without APP_ORIGIN, return error
+    return res.status(403).json({ error: "CORS: Origin not authorized" });
+  }
+
   res.setHeader("Access-Control-Allow-Origin", allowOrigin);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -179,7 +232,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Rate limit exceeded. Try again in one minute." });
   }
 
-  if (!consumeDailyQuota(subject, dailyQuota)) {
+  if (!(await consumeDailyQuota(subject, dailyQuota))) {
     if (verified.trusted) {
       return res.status(403).json({ error: "Your quota is completed. You can send up to 7 AI requests per day." });
     }

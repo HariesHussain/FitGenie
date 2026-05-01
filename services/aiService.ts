@@ -417,13 +417,12 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
       text: msg.text.slice(0, 1200),
     }));
 
-    // Check all possible API key sources
+    // Resolve API key from VITE_ env vars (set in .env.local, exposed by Vite)
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY 
-      || import.meta.env.VITE_GOOGLE_API_KEY
-      || (typeof process !== 'undefined' && process.env?.API_KEY)
-      || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY);
+      || import.meta.env.VITE_GOOGLE_API_KEY;
 
     console.log("[AI] API key available:", !!apiKey);
+    console.log("[AI] Key source:", apiKey === import.meta.env.VITE_GEMINI_API_KEY ? "VITE_GEMINI_API_KEY" : apiKey === import.meta.env.VITE_GOOGLE_API_KEY ? "VITE_GOOGLE_API_KEY" : "none");
     console.log("[AI] Sending message:", cleanMessage.slice(0, 50) + "...");
 
     if (apiKey) {
@@ -438,12 +437,13 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
       });
 
       const result = await chat.sendMessage({ message: cleanMessage });
-      console.log("[AI] Response received successfully");
+      console.log("[AI] Response received successfully, length:", result.text?.length || 0);
       return result.text || "I'm having trouble thinking of a response right now. Try again!";
     }
 
     // Fallback: call backend proxy if no API key available
-    console.log("[AI] No API key found, falling back to /api/chat proxy");
+    console.warn("[AI] No client-side API key found. Ensure VITE_GEMINI_API_KEY is set in .env.local");
+    console.log("[AI] Falling back to /api/chat proxy...");
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
 
     const response = await fetch('/api/chat', {
@@ -460,16 +460,22 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
 
     const result = (await response.json()) as { reply?: string; error?: string };
     if (!response.ok) {
-      console.error("[AI] Proxy error:", result.error);
+      console.error("[AI] Proxy error:", response.status, result.error);
       return result.error || "The AI coach is temporarily unavailable. Please try again shortly.";
     }
 
     console.log("[AI] Proxy response received");
     return result.reply || "I'm having trouble thinking of a response right now. Try again!";
   } catch (error: any) {
-    console.error("[AI] Error:", error?.message || error);
+    console.error("[AI] ERROR:", error?.message || error);
+    console.error("[AI] Error details:", { 
+      name: error?.name, 
+      status: error?.status, 
+      statusText: error?.statusText,
+      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
+    });
     if (error?.message?.includes('API key')) {
-      return "AI coach is not configured. Please add your Gemini API key in the app settings.";
+      return "AI coach is not configured. Please add your Gemini API key to .env.local as VITE_GEMINI_API_KEY.";
     }
     return "The AI coach is temporarily unavailable. Please try again shortly.";
   }

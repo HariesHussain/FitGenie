@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Home, Dumbbell, Utensils, MessageSquare, User, LogOut, ClipboardList, Sparkles } from 'lucide-react';
 
 interface LayoutProps {
@@ -12,14 +13,18 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, onLogout, user }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const navItems = [
+  const isNative = Capacitor.isNativePlatform();
+
+  const allNavItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'workout', label: 'Workout', icon: Dumbbell },
     { id: 'tracker', label: 'Tracker', icon: ClipboardList },
     { id: 'diet', label: 'Diet', icon: Utensils },
-    { id: 'chat', label: 'Coach', icon: MessageSquare },
+    // AI Coach hidden on native Android/iOS — only available on website
+    ...(!isNative ? [{ id: 'chat', label: 'Coach', icon: MessageSquare }] : []),
     { id: 'profile', label: 'Profile', icon: User },
   ];
+  const navItems = allNavItems;
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">

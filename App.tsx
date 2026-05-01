@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Layout } from './components/Layout';
 import { Landing } from './views/Landing';
 
@@ -654,6 +655,11 @@ const App = () => {
         );
       }
       case 'chat':
+        // AI Coach is disabled on native Android/iOS
+        if (Capacitor.isNativePlatform()) {
+          setView('dashboard');
+          return null;
+        }
         return <ChatView messages={messages} onAddMessage={handleAddMessage} />;
       case 'tracker':
         return <TrackerView user={user} />;

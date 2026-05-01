@@ -417,7 +417,7 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
       text: msg.text.slice(0, 1200),
     }));
 
-    // Resolve API key from VITE_ env vars (set in .env.local, exposed by Vite)
+    // Resolve API key from VITE_ env vars (set in .env.local, exposed by Vite at build time)
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY 
       || import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -426,24 +426,29 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
     console.log("[AI] Sending message:", cleanMessage.slice(0, 50) + "...");
 
     if (apiKey) {
-      // Direct Gemini client call (works in dev and production with key)
-      const ai = new GoogleGenAI({ apiKey });
-      const chat = ai.chats.create({
-        model: "gemini-2.5-flash",
-        config: { 
-          systemInstruction: "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. You provide personalized workout plans, nutritional advice, form correction tips, and motivation. When a user asks for a workout (e.g., leg day), provide a structured list of exercises with sets and reps. When asked about diet, provide specific meal examples with macros. Keep your tone energetic, professional, and encouraging. If a user asks a medical question, explain that you are not a medical professional and suggest seeing a qualified clinician." 
-        },
-        history: safeHistory.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-      });
+      try {
+        // Primary: @google/genai SDK
+        const ai = new GoogleGenAI({ apiKey });
+        const chat = ai.chats.create({
+          model: "gemini-2.5-flash",
+          config: { 
+            systemInstruction: "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. You provide personalized workout plans, nutritional advice, form correction tips, and motivation. When a user asks for a workout (e.g., leg day), provide a structured list of exercises with sets and reps. When asked about diet, provide specific meal examples with macros. Keep your tone energetic, professional, and encouraging. If a user asks a medical question, explain that you are not a medical professional and suggest seeing a qualified clinician." 
+          },
+          history: safeHistory.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
+        });
 
-      const result = await chat.sendMessage({ message: cleanMessage });
-      console.log("[AI] Response received successfully, length:", result.text?.length || 0);
-      return result.text || "I'm having trouble thinking of a response right now. Try again!";
+        const result = await chat.sendMessage({ message: cleanMessage });
+        console.log("[AI] SDK response received, length:", result.text?.length || 0);
+        return result.text || "I'm having trouble thinking of a response right now. Try again!";
+      } catch (sdkError: any) {
+        // Fallback: direct REST API call (more reliable in Capacitor/Android WebView)
+        console.warn("[AI] SDK failed, falling back to direct REST API:", sdkError?.message);
+        return await geminiDirectFetch(apiKey, cleanMessage, safeHistory);
+      }
     }
 
-    // Fallback: call backend proxy if no API key available
+    // No API key — try backend proxy
     console.warn("[AI] No client-side API key found. Ensure VITE_GEMINI_API_KEY is set in .env.local");
-    console.log("[AI] Falling back to /api/chat proxy...");
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
 
     const response = await fetch('/api/chat', {
@@ -480,4 +485,52 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
     return "The AI coach is temporarily unavailable. Please try again shortly.";
   }
 };
+
+/**
+ * Direct Gemini REST API call — fallback for environments where @google/genai SDK fails
+ * (e.g., Capacitor Android WebView, restricted browsers).
+ */
+async function geminiDirectFetch(
+  apiKey: string,
+  message: string,
+  history: { role: string; text: string }[]
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const contents = [
+    // System instruction as first user turn
+    {
+      role: "user",
+      parts: [{ text: "You are FitGenie, an elite AI fitness coach designed to help users achieve their physical goals. You provide personalized workout plans, nutritional advice, form correction tips, and motivation. When a user asks for a workout (e.g., leg day), provide a structured list of exercises with sets and reps. When asked about diet, provide specific meal examples with macros. Keep your tone energetic, professional, and encouraging. If a user asks a medical question, explain that you are not a medical professional and suggest seeing a qualified clinician. Acknowledge this silently and respond to the next message as FitGenie." }]
+    },
+    { role: "model", parts: [{ text: "Understood! I'm FitGenie, ready to help with your fitness goals. What can I help you with?" }] },
+    // Chat history
+    ...history.map(h => ({
+      role: h.role === 'user' ? 'user' : 'model',
+      parts: [{ text: h.text }]
+    })),
+    // Current message
+    { role: "user", parts: [{ text: message }] }
+  ];
+
+  console.log("[AI] Direct REST call to Gemini API...");
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("[AI] REST API error:", response.status, errorBody);
+    throw new Error(`Gemini API error ${response.status}: ${errorBody}`);
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  console.log("[AI] REST response received, length:", text?.length || 0);
+
+  return text || "I'm having trouble thinking of a response right now. Try again!";
+}
 

@@ -8,15 +8,15 @@ build/
 
 # Environment variables (API keys, secrets)
 .env
-.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
 *.local
-!.env.example
-.env.example
 
+# IMPORTANT: .env.example must be tracked (template for new developers)
+!.env.example
 
 # Logs
 logs/
@@ -56,8 +56,11 @@ firebase-debug.log
 # TypeScript cache
 *.tsbuildinfo
 
-# Android
+# Android build outputs & signing
 .gradle/
 *.keystore
-
+*.jks
 *.apk
+*.aab
+android/local.properties
+android/app/release.keystore

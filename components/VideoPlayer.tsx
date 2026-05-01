@@ -8,10 +8,13 @@ interface VideoPlayerProps {
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    console.log("VIDEO URL:", url);
     setLoaded(false);
     setErrored(false);
+    setRetryCount(0);
   }, [url]);
 
   const isYouTube = (u?: string) =>
@@ -78,17 +81,28 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
         ) : (
           <>
             <video
+              key={retryCount}
               src={url}
-              className="h-full w-full object-contain"
-              style={{ display: errored ? "none" : "block" }}
-              preload="metadata"
               autoPlay
-              muted
               loop
+              muted
               playsInline
-              onCanPlay={() => setLoaded(true)}
-              onError={() => setErrored(true)}
-              controls={false}
+              preload="metadata"
+              className="h-full w-full object-cover"
+              style={{ display: errored ? "none" : "block" }}
+              onCanPlay={() => {
+                setLoaded(true);
+                setErrored(false);
+              }}
+              onLoadedData={() => setErrored(false)}
+              onError={(e) => {
+                console.error("VIDEO ERROR (Retry " + retryCount + "):", url, e);
+                if (retryCount < 2) {
+                  setTimeout(() => setRetryCount((r) => r + 1), 800);
+                } else {
+                  setErrored(true);
+                }
+              }}
             />
             {errored && (
               <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950 text-white">

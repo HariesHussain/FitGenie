@@ -4,8 +4,10 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import {
     User, Mail, Ruler, Weight, Zap, Target, Trophy,
-    Edit3, Save, X, Activity, ChevronRight
+    Edit3, Save, X, Activity, ChevronRight, Lock, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { changeUserPassword, getFriendlyErrorMessage } from '../services/api';
+import { auth } from '../firebaseConfig';
 
 interface ProfileViewProps {
     user: UserProfile;
@@ -16,6 +18,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState<UserProfile>({ ...user });
     const [saving, setSaving] = useState(false);
+
+    // Change password state
+    const [currentPw, setCurrentPw] = useState('');
+    const [newPw, setNewPw] = useState('');
+    const [confirmPw, setConfirmPw] = useState('');
+    const [pwLoading, setPwLoading] = useState(false);
+    const [pwError, setPwError] = useState('');
+    const [pwSuccess, setPwSuccess] = useState('');
 
     const handleChange = (field: keyof UserProfile, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -265,6 +275,92 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">BMI</p>
                         </div>
                     </div>
+
+                    {/* Change Password Section */}
+                    {auth.currentUser && !auth.currentUser.isAnonymous && (
+                        <Card>
+                            <h3 className="text-xs uppercase text-slate-500 font-bold tracking-wider mb-3 flex items-center gap-2">
+                                <Lock size={14} /> Change Password
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-medium text-slate-400">Current Password</label>
+                                    <input
+                                        type="password"
+                                        value={currentPw}
+                                        onChange={(e) => { setCurrentPw(e.target.value); setPwError(''); setPwSuccess(''); }}
+                                        placeholder="Enter current password"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-600"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-medium text-slate-400">New Password</label>
+                                    <input
+                                        type="password"
+                                        value={newPw}
+                                        onChange={(e) => { setNewPw(e.target.value); setPwError(''); setPwSuccess(''); }}
+                                        placeholder="Minimum 8 characters"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-600"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-medium text-slate-400">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        value={confirmPw}
+                                        onChange={(e) => { setConfirmPw(e.target.value); setPwError(''); setPwSuccess(''); }}
+                                        placeholder="Repeat new password"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-600"
+                                    />
+                                </div>
+
+                                {pwError && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs text-center flex items-center justify-center gap-2">
+                                        <AlertCircle size={14} /> {pwError}
+                                    </div>
+                                )}
+                                {pwSuccess && (
+                                    <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-xs text-center flex items-center justify-center gap-2">
+                                        <CheckCircle size={14} /> {pwSuccess}
+                                    </div>
+                                )}
+
+                                <Button
+                                    fullWidth
+                                    disabled={pwLoading}
+                                    onClick={async () => {
+                                        setPwError('');
+                                        setPwSuccess('');
+                                        if (newPw.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+                                        if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+                                        if (!currentPw) { setPwError('Please enter your current password.'); return; }
+                                        setPwLoading(true);
+                                        try {
+                                            await changeUserPassword(currentPw, newPw);
+                                            setPwSuccess('Password updated successfully!');
+                                            setCurrentPw(''); setNewPw(''); setConfirmPw('');
+                                        } catch (err: any) {
+                                            console.error('[Auth] Change password error:', err);
+                                            if (err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
+                                                setPwError('Current password is incorrect.');
+                                            } else {
+                                                setPwError(getFriendlyErrorMessage(err));
+                                            }
+                                        } finally {
+                                            setPwLoading(false);
+                                        }
+                                    }}
+                                >
+                                    {pwLoading ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Updating...
+                                        </span>
+                                    ) : 'Update Password'}
+                                </Button>
+                            </div>
+                        </Card>
+                    )}
                 </>
             )}
         </div>

@@ -4,6 +4,9 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   confirmPasswordReset,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   User,
 } from "firebase/auth";
 import {
@@ -98,7 +101,9 @@ export async function loginWithEmail(
 
 // 🔹 Forgot Password → sends Firebase reset email
 export async function sendResetEmail(email: string): Promise<void> {
+  console.log("[Auth] Sending password reset email to:", email);
   await sendPasswordResetEmail(auth, email);
+  console.log("[Auth] Password reset email sent successfully");
 }
 
 // 🔹 Confirm password reset using the oobCode from Firebase email link
@@ -106,7 +111,29 @@ export async function confirmReset(
   oobCode: string,
   newPassword: string
 ): Promise<void> {
+  console.log("[Auth] Confirming password reset with oobCode");
   await confirmPasswordReset(auth, oobCode, newPassword);
+  console.log("[Auth] Password reset confirmed successfully");
+}
+
+// 🔹 Change password (current → new) for logged-in user
+export async function changeUserPassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw { code: 'auth/no-user', message: 'No user is currently signed in.' };
+  }
+
+  console.log("[Auth] Re-authenticating user before password change");
+  // Re-authenticate first (Firebase requires recent login for sensitive ops)
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  console.log("[Auth] Re-authentication successful, updating password");
+
+  await updatePassword(user, newPassword);
+  console.log("[Auth] Password updated successfully");
 }
 
 // ======================================================================

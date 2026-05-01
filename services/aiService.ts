@@ -92,35 +92,75 @@ export const EX = {
 } as const;
 
 // ==============================================================================
-// 🎬 SLUG-BASED VIDEO LOOKUP
+// 🎬 STATIC VIDEO MAPPING
 // ==============================================================================
 
-/** Convert any exercise name → slug, e.g. "Barbell Back Squat" → "barbell-back-squat" */
-const toSlug = (name: string): string =>
-  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-/**
- * Override map for exercises whose video filename differs from the auto-generated slug.
- * Key = exact exercise display name, Value = actual filename (without .mp4).
- */
-const SLUG_OVERRIDES: Record<string, string> = {
+const VIDEO_MAP: Record<string, string> = {
+  'Barbell Back Squat': 'barbell-back-squat',
+  'Romanian Deadlift': 'romanian-deadlift',
+  'Leg Press': 'leg-press',
+  'Walking Lunges': 'walking-lunges',
+  'Leg Extensions': 'leg-extension',
+  'Hamstring Curl': 'hamstring-curl',
+  'Standing Calf Raise': 'standing-calf-raise',
+  'Bulgarian Split Squat': 'bulgarian-split-squat',
+  'Barbell Bench Press': 'barbell-bench-press',
+  'Incline Dumbbell Press': 'incline-bench-press',
+  'Incline Bench Press': 'incline-benchpress',
+  'Chest Dips': 'chest-dips',
+  'Pec Deck Machine': 'pec-deck',
   'Decline Push-ups': 'decline-push-up',
   'Dumbbell Pullover': 'dumbell-pullover',
-  'Leg Extensions': 'leg-extension',
-  'Pec Deck Machine': 'pec-deck',
-  'Incline Dumbbell Press': 'incline-bench-press',   // file content is dumbbell press
-  'Incline Bench Press': 'incline-benchpress',     // file without hyphen has bench press
-  'Pull-ups': 'pull-ups-weighted',            // video file kept original name
+  'Deadlift': 'romanian-deadlift',
+  'Lat Pulldown (Wide Grip)': 'lat-pulldown-wide-grip',
+  'Seated Cable Row': 'seated-cable-row',
+  'Single Arm Dumbbell Row': 'single-arm-dumbbell-row',
+  'Face Pulls': 'face-pulls',
+  'Pull-ups': 'pull-ups-weighted',
+  'Straight Arm Pulldown': 'straight-arm-pulldown',
+  'Overhead Barbell Press': 'overhead-barbell-press',
+  'Dumbbell Lateral Raises': 'dumbbell-lateral-raises',
+  'Dumbbell Front Raises': 'dumbbell-front-raises',
+  'Rear Delt Flys': 'rear-delt-flys',
+  'Arnold Press': 'arnold-press',
+  'Upright Rows': 'upright-rows',
+  'Cable Lateral Raises': 'cable-lateral-raises',
+  'Shrugs': 'shrugs',
+  'Barbell Bicep Curl': 'barbell-bicep-curl',
+  'Tricep Rope Pushdown': 'tricep-rope-pushdown',
+  'Hammer Curls': 'hammer-curls',
+  'Skullcrushers': 'skullcrushers',
+  'Preacher Curls': 'preacher-curls',
+  'Overhead Tricep Extension': 'overhead-tricep-extension',
+  'Concentration Curls': 'concentration-curls',
+  'Tricep Dips (Weighted)': 'tricep-dips-weighted',
+  'Reverse Grip Curls': 'reverse-grip-curls',
+  'Plank': 'plank',
+  'Crunches': 'crunches',
+  'Leg Raises': 'leg-raises',
+  'Russian Twists': 'russian-twists',
+  'Bicycle Crunches': 'bicycle-crunches',
+  'Hanging Leg Raises': 'hanging-leg-raises',
+  'Ab Wheel Rollout': 'ab-wheel-rollout',
+  'Dragon Flags': 'dragon-flags',
+  'Bent Over Row': 'bent-over-row',
+  'Overhead Press': 'overhead-press',
+  'Lunges': 'lunges',
 };
 
 /**
- * Return the video path for an exercise.
- * Checks SLUG_OVERRIDES first, then falls back to auto-generated slug.
- * If a video doesn't exist the browser's <video onError> should fallback to /videos/default.mp4.
+ * Return the video path for an exercise based on strict mapping.
  */
 export const getVideoUrl = (name: string): string => {
-  const slug = SLUG_OVERRIDES[name] || toSlug(name);
-  return `/videos/${slug}.mp4`;
+  const publicId = VIDEO_MAP[name];
+  if (!publicId) {
+    console.warn("Missing video mapping for:", name);
+    return "";
+  }
+  
+  const finalUrl = `https://res.cloudinary.com/dln4wwvmd/video/upload/f_mp4,q_auto,c_pad,ar_16:9,b_black/${publicId}.mp4`;
+  console.log("Resolved video URL for", name, "->", finalUrl);
+  return finalUrl;
 };
 
 // ==============================================================================
@@ -377,9 +417,18 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
       text: msg.text.slice(0, 1200),
     }));
 
-    // If running in development and we have the API key, run it directly on the client
-    if (import.meta.env.DEV && import.meta.env.VITE_GEMINI_API_KEY) {
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    // Check all possible API key sources
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY 
+      || import.meta.env.VITE_GOOGLE_API_KEY
+      || (typeof process !== 'undefined' && process.env?.API_KEY)
+      || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY);
+
+    console.log("[AI] API key available:", !!apiKey);
+    console.log("[AI] Sending message:", cleanMessage.slice(0, 50) + "...");
+
+    if (apiKey) {
+      // Direct Gemini client call (works in dev and production with key)
+      const ai = new GoogleGenAI({ apiKey });
       const chat = ai.chats.create({
         model: "gemini-2.5-flash",
         config: { 
@@ -389,9 +438,12 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
       });
 
       const result = await chat.sendMessage({ message: cleanMessage });
+      console.log("[AI] Response received successfully");
       return result.text || "I'm having trouble thinking of a response right now. Try again!";
     }
 
+    // Fallback: call backend proxy if no API key available
+    console.log("[AI] No API key found, falling back to /api/chat proxy");
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
 
     const response = await fetch('/api/chat', {
@@ -408,12 +460,18 @@ export const getAiChatResponse = async (currentMessage: string, history: ChatMes
 
     const result = (await response.json()) as { reply?: string; error?: string };
     if (!response.ok) {
+      console.error("[AI] Proxy error:", result.error);
       return result.error || "The AI coach is temporarily unavailable. Please try again shortly.";
     }
 
+    console.log("[AI] Proxy response received");
     return result.reply || "I'm having trouble thinking of a response right now. Try again!";
-  } catch (error) {
-    console.error("AI proxy error:", error);
+  } catch (error: any) {
+    console.error("[AI] Error:", error?.message || error);
+    if (error?.message?.includes('API key')) {
+      return "AI coach is not configured. Please add your Gemini API key in the app settings.";
+    }
     return "The AI coach is temporarily unavailable. Please try again shortly.";
   }
 };
+
